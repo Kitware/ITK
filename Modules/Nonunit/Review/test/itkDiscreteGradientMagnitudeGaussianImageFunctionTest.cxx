@@ -56,7 +56,7 @@ itkDiscreteGradientMagnitudeGaussianImageFunctionTestND(int argc, char * argv[])
 
   double                                                                        maxError = 0.001;
   unsigned int                                                                  maxKernelWidth = 100;
-  typename DiscreteGradientMagnitudeGaussianFunctionType::InterpolationModeType interpolationMode =
+  typename DiscreteGradientMagnitudeGaussianFunctionType::InterpolationModeEnum interpolationMode =
     DiscreteGradientMagnitudeGaussianFunctionType::NearestNeighbourInterpolation;
   bool useImageSpacing = true;
 
@@ -71,7 +71,7 @@ itkDiscreteGradientMagnitudeGaussianImageFunctionTestND(int argc, char * argv[])
   if (argc > 6)
   {
     interpolationMode =
-      static_cast<typename DiscreteGradientMagnitudeGaussianFunctionType::InterpolationModeType>(std::stoi(argv[6]));
+      static_cast<typename DiscreteGradientMagnitudeGaussianFunctionType::InterpolationModeEnum>(std::stoi(argv[6]));
   }
   if (argc > 7)
   {

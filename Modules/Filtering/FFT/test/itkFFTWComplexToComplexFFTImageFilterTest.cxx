@@ -60,11 +60,11 @@ transformImage(const char * inputImageFileName, const char * outputImageFileName
   using ComplexFilterType = itk::FFTWComplexToComplexFFTImageFilter<ComplexImageType>;
   typename ComplexFilterType::Pointer inverseComplexFilter = ComplexFilterType::New();
   inverseComplexFilter->SetInput(forwardFilter->GetOutput());
-  inverseComplexFilter->SetTransformDirection(ComplexFilterType::INVERSE);
+  inverseComplexFilter->SetTransformDirection(ComplexFilterType::TransformDirectionEnum::INVERSE);
 
   typename ComplexFilterType::Pointer forwardComplexFilter = ComplexFilterType::New();
   forwardComplexFilter->SetInput(inverseComplexFilter->GetOutput());
-  forwardComplexFilter->SetTransformDirection(ComplexFilterType::FORWARD);
+  forwardComplexFilter->SetTransformDirection(ComplexFilterType::TransformDirectionEnum::FORWARD);
   // This tests the CanUseDestructiveAlgorithm state with the FFTW version.
   forwardComplexFilter->ReleaseDataFlagOn();
 
@@ -103,7 +103,7 @@ itkFFTWComplexToComplexFFTImageFilterTest(int argc, char * argv[])
   const std::string pixelTypeString(argv[3]);
 
   itk::ImageIOBase::Pointer imageIO =
-    itk::ImageIOFactory::CreateImageIO(inputImageFileName, itk::ImageIOFactory::FileModeEnum::ReadMode);
+    itk::ImageIOFactory::CreateImageIO(inputImageFileName, itk::ImageIOFactory::IOFileModeEnum::ReadMode);
   imageIO->SetFileName(inputImageFileName);
   imageIO->ReadImageInformation();
   const unsigned int dimension = imageIO->GetNumberOfDimensions();
@@ -150,5 +150,14 @@ itkFFTWComplexToComplexFFTImageFilterTest(int argc, char * argv[])
     return EXIT_FAILURE;
   }
 
+  // Test streaming enumeration for ComplexToComplexFFTImageFilterEnums::TransformDirection elements
+  const std::set<itk::ComplexToComplexFFTImageFilterEnums::TransformDirection> allTransformDirection{
+    itk::ComplexToComplexFFTImageFilterEnums::TransformDirection::FORWARD,
+    itk::ComplexToComplexFFTImageFilterEnums::TransformDirection::INVERSE
+  };
+  for (const auto & ee : allTransformDirection)
+  {
+    std::cout << "STREAMED ENUM VALUE ComplexToComplexFFTImageFilterEnums::TransformDirection: " << ee << std::endl;
+  }
   return EXIT_FAILURE;
 }

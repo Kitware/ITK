@@ -555,7 +555,7 @@ FEMRegistrationFilter<TMovingImage, TFixedImage, TFemObject>::IterativeSolve(Sol
     solver->Update();
     m_Load->PrintCurrentEnergy();
 
-    if (m_DescentDirection == 1)
+    if (itkExposeEnumValue(m_DescentDirection) == 1)
     {
       deltE = (LastE - m_Load->GetCurrentEnergy());
     }
@@ -1485,7 +1485,7 @@ FEMRegistrationFilter<TMovingImage, TFixedImage, TFemObject>::PrintSelf(std::ost
   os << indent << "Max Level: " << m_MaxLevel << std::endl;
   os << indent << "Total Iterations: " << m_TotalIterations << std::endl;
 
-  os << indent << "Descent Direction: " << m_DescentDirection << std::endl;
+  os << indent << "Descent Direction: " << itkExposeEnumValue(m_DescentDirection) << std::endl;
   os << indent << "E: " << m_E << std::endl;
   os << indent << "Gamma: " << m_Gamma << std::endl;
   os << indent << "Rho: " << m_Rho << std::endl;

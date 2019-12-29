@@ -99,7 +99,7 @@ itkDiscreteHessianGaussianImageFunctionTestND(int argc, char * argv[])
   bool useImageSpacing = true;
   ITK_TEST_SET_GET_BOOLEAN(function, UseImageSpacing, useImageSpacing);
 
-  typename HessianGaussianImageFunctionType::InterpolationModeType interpolationMode =
+  typename HessianGaussianImageFunctionType::InterpolationModeEnum interpolationMode =
     HessianGaussianImageFunctionType::NearestNeighbourInterpolation;
 
   function->SetInterpolationMode(interpolationMode);

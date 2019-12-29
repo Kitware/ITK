@@ -15,27 +15,23 @@
  *  limitations under the License.
  *
  *=========================================================================*/
-#include "itkMesh.h"
+#include "../include/itkGaussianDerivativeOperator.h"
 
 namespace itk
 {
-/** Define how to print enumerations */
+/** Print enum values */
 std::ostream &
-operator<<(std::ostream & out, const MeshClassCellsAllocationMethodEnum value)
+operator<<(std::ostream & out, const GaussianDerivativeOperatorEnums::InterpolationMode value)
 {
   return out << [value] {
     switch (value)
     {
-      case MeshClassCellsAllocationMethodEnum::CellsAllocationMethodUndefined:
-        return "MeshClassCellsAllocationMethodEnum::CellsAllocationMethodUndefined";
-      case MeshClassCellsAllocationMethodEnum::CellsAllocatedAsStaticArray:
-        return "MeshClassCellsAllocationMethodEnum::CellsAllocatedAsStaticArray";
-      case MeshClassCellsAllocationMethodEnum::CellsAllocatedAsADynamicArray:
-        return "MeshClassCellsAllocationMethodEnum::CellsAllocatedAsADynamicArray";
-      case MeshClassCellsAllocationMethodEnum::CellsAllocatedDynamicallyCellByCell:
-        return "MeshClassCellsAllocationMethodEnum::CellsAllocatedDynamicallyCellByCell";
+      case GaussianDerivativeOperatorEnums::InterpolationMode::NearestNeighbourInterpolation:
+        return "itk::GaussianDerivativeOperatorEnums::InterpolationMode::NearestNeighbourInterpolation";
+      case GaussianDerivativeOperatorEnums::InterpolationMode::LinearInterpolation:
+        return "itk::GaussianDerivativeOperatorEnums::InterpolationMode::LinearInterpolation";
       default:
-        return "INVALID VALUE FOR MeshClassCellsAllocationMethodEnum";
+        return "INVALID VALUE FOR itk::GaussianDerivativeOperatorEnums::InterpolationMode";
     }
   }();
 }

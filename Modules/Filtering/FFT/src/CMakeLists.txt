@@ -1,5 +1,6 @@
 set(ITKFFT_SRCS
   itkFFTWGlobalConfiguration.cxx
+  itkComplexToComplexFFTImageFilter.cxx
   )
 
 # this library is only needed if FFTW is used

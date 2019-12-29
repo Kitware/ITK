@@ -131,9 +131,7 @@ ProcessArguments(int * ac, ArgumentStringType * av, ProcessedOutputType * proces
 
 /// Get the PixelType and ComponentType from fileName
 void
-GetImageType(const char *                        fileName,
-             itk::ImageIOBase::IOPixelType &     pixelType,
-             itk::ImageIOBase::IOComponentType & componentType);
+GetImageType(const char * fileName, itk::IOPixelEnum & pixelType, itk::IOComponentEnum & componentType);
 
 int
 RegressionTestImage(const char *         testImageFilename,

@@ -29,7 +29,35 @@
 
 namespace itk
 {
-/** \class FastMarchingImageFilter
+/**\class FastMarchingImageFilterEnums
+ * \brief Contains all enum classes used by the FastMarchingImageFilter class.
+ * \ingroup ITKFastMarching
+ */
+class FastMarchingImageFilterEnums
+{
+public:
+  /**\class Label
+   * \ingroup ITKFastMarching
+   * \ingroup LevelSetSegmentation
+   * Enum of Fast Marching algorithm point types. FarPoints represent far
+   * away points; TrialPoints represent points within a narrowband of the
+   * propagating front; and AlivePoints represent points which have already
+   * been processed. */
+  enum class Label : uint8_t
+  {
+    FarPoint = 0,
+    AlivePoint,
+    TrialPoint,
+    InitialTrialPoint,
+    OutsidePoint
+  };
+};
+// Define how to print enumeration
+extern std::ostream &
+operator<<(std::ostream & out, const FastMarchingImageFilterEnums::Label value);
+
+/**
+ *\class FastMarchingImageFilter
  * \brief Solve an Eikonal equation using Fast Marching
  *
  * Fast marching solves an Eikonal equation where the speed is always
@@ -175,21 +203,18 @@ public:
   /** Index type alias support */
   using IndexType = Index<Self::SetDimension>;
 
-  /** Enum of Fast Marching algorithm point types. FarPoints represent far
-   * away points; TrialPoints represent points within a narrowband of the
-   * propagating front; and AlivePoints represent points which have already
-   * been processed. */
-  enum LabelType
-  {
-    FarPoint = 0,
-    AlivePoint,
-    TrialPoint,
-    InitialTrialPoint,
-    OutsidePoint
-  };
+  using LabelEnum = FastMarchingImageFilterEnums::Label;
+#if !defined(ITK_LEGACY_REMOVE)
+  /**Exposes enums values for backwards compatibility*/
+  static constexpr LabelEnum FarPoint = LabelEnum::FarPoint;
+  static constexpr LabelEnum AlivePoint = LabelEnum::AlivePoint;
+  static constexpr LabelEnum TrialPoint = LabelEnum::TrialPoint;
+  static constexpr LabelEnum InitialTrialPoint = LabelEnum::InitialTrialPoint;
+  static constexpr LabelEnum OutsidePoint = LabelEnum::OutsidePoint;
+#endif
 
   /** LabelImage type alias support */
-  using LabelImageType = Image<unsigned char, Self::SetDimension>;
+  using LabelImageType = Image<LabelEnum, Self::SetDimension>;
 
   /** LabelImagePointer type alias support */
   using LabelImagePointer = typename LabelImageType::Pointer;

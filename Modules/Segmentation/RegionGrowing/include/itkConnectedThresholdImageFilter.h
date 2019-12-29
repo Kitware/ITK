@@ -23,7 +23,34 @@
 
 namespace itk
 {
-/** \class ConnectedThresholdImageFilter
+/**\class ConnectedThresholdImageFilterEnums
+ * \brief Contains all the enum classes used by the ConnectedThresholdImageFilter class.
+ * \ingroup RegionGrowingSegmentation
+ * \ingroup ITKRegionGrowing
+ */
+class ConnectedThresholdImageFilterEnums
+{
+public:
+  /**
+   * \class Connectivity
+   * \ingroup RegionGrowingSegmentation
+   * \ingroup ITKRegionGrowing
+   * Face connectivity is 4 connected in 2D, 6  connected in 3D, 2*n   in ND
+   * Full connectivity is 8 connected in 2D, 26 connected in 3D, 3^n-1 in ND
+   * Default is to use FaceConnectivity.
+   */
+  enum class Connectivity : uint8_t
+  {
+    FaceConnectivity,
+    FullConnectivity
+  };
+};
+
+// Define how to print enumeration
+extern std::ostream &
+operator<<(std::ostream & out, const ConnectedThresholdImageFilterEnums::Connectivity value);
+/**
+ *\class ConnectedThresholdImageFilter
  * \brief Label pixels that are connected to a seed and lie within a range of values
  *
  * ConnectedThresholdImageFilter labels pixels with ReplaceValue that are
@@ -132,19 +159,17 @@ public:
   // End concept checking
 #endif
 
-  /** Face connectivity is 4 connected in 2D, 6  connected in 3D, 2*n   in ND
-   *  Full connectivity is 8 connected in 2D, 26 connected in 3D, 3^n-1 in ND
-   *  Default is to use FaceConnectivity. */
-  typedef enum
-  {
-    FaceConnectivity,
-    FullConnectivity
-  } ConnectivityEnumType;
+  using ConnectivityEnum = ConnectedThresholdImageFilterEnums::Connectivity;
+#if !defined(ITK_LEGACY_REMOVE)
+  /**Exposes enums values for backwards compatibility*/
+  static constexpr ConnectivityEnum FaceConnectivity = ConnectivityEnum::FaceConnectivity;
+  static constexpr ConnectivityEnum FullConnectivity = ConnectivityEnum::FullConnectivity;
+#endif
 
   /** Type of connectivity to use (fully connected OR 4(2D), 6(3D),
    * 2*N(ND) connectivity). */
-  itkSetEnumMacro(Connectivity, ConnectivityEnumType);
-  itkGetEnumMacro(Connectivity, ConnectivityEnumType);
+  itkSetEnumMacro(Connectivity, ConnectivityEnum);
+  itkGetEnumMacro(Connectivity, ConnectivityEnum);
 
 protected:
   ConnectedThresholdImageFilter();
@@ -166,7 +191,7 @@ private:
 
   OutputImagePixelType m_ReplaceValue;
 
-  ConnectivityEnumType m_Connectivity;
+  ConnectivityEnum m_Connectivity;
 };
 } // end namespace itk
 

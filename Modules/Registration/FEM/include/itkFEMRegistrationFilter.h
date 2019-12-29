@@ -54,6 +54,25 @@ namespace itk
 {
 namespace fem
 {
+/**\class FEMRegistrationFilterEnums
+ * \brief Contains all enum classes used by FEMRegistrationFilter class.
+ * \ingroup ITKFEMRegistration
+ */
+class FEMRegistrationFilterEnums
+{
+public:
+  /**\class Sign
+   * \ingroup ITKFEMRegistration
+   */
+  enum class Sign : uint8_t
+  {
+    positive,
+    negative
+  };
+};
+// Define how to print enumeration
+extern std::ostream &
+operator<<(std::ostream & out, const FEMRegistrationFilterEnums::Sign value);
 
 /** \class FEMRegistrationFilter
  *  \brief FEM Image registration filter.
@@ -146,11 +165,14 @@ public:
   using LinearSystemSolverType = LinearSystemWrapperItpack;
   using SolverType = SolverCrankNicolson<ImageDimension>;
 
-  enum Sign
-  {
-    positive = 1,
-    negative = -1
-  };
+  using SignEnum = FEMRegistrationFilterEnums::Sign;
+#if !defined(ITK_LEGACY_REMOVE)
+  /**Exposes enums values for backwards compatibility*/
+  static constexpr SignEnum positive = SignEnum::positive;
+  static constexpr SignEnum negative = SignEnum::negative;
+#endif
+
+
   using Float = double;
   using LoadArray = Load::ArrayType;
 
@@ -673,7 +695,7 @@ private:
   bool          m_UseNormalizedGradient;
   bool          m_CreateMeshFromImage;
   unsigned int  m_EmployRegridding;
-  Sign          m_DescentDirection;
+  SignEnum      m_DescentDirection;
   Float         m_EnergyReductionFactor;
   ImageSizeType m_FullImageSize;
   ImageSizeType m_ImageOrigin;

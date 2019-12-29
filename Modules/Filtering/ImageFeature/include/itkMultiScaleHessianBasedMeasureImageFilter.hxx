@@ -45,7 +45,7 @@ MultiScaleHessianBasedMeasureImageFilter<TInputImage, THessianImage, TOutputImag
   m_SigmaMaximum = 2.0;
 
   m_NumberOfSigmaSteps = 10;
-  m_SigmaStepMethod = Self::LogarithmicSigmaSteps;
+  m_SigmaStepMethod = Self::SigmaStepMethodEnum::LogarithmicSigmaSteps;
 
   m_HessianFilter = HessianFilterType::New();
   m_HessianToMeasureFilter = nullptr;
@@ -294,13 +294,13 @@ MultiScaleHessianBasedMeasureImageFilter<TInputImage, THessianImage, TOutputImag
 
   switch (m_SigmaStepMethod)
   {
-    case Self::EquispacedSigmaSteps:
+    case Self::SigmaStepMethodEnum::EquispacedSigmaSteps:
     {
       const double stepSize = std::max(1e-10, (m_SigmaMaximum - m_SigmaMinimum) / (m_NumberOfSigmaSteps - 1));
       sigmaValue = m_SigmaMinimum + stepSize * scaleLevel;
       break;
     }
-    case Self::LogarithmicSigmaSteps:
+    case Self::SigmaStepMethodEnum::LogarithmicSigmaSteps:
     {
       const double stepSize =
         std::max(1e-10, (std::log(m_SigmaMaximum) - std::log(m_SigmaMinimum)) / (m_NumberOfSigmaSteps - 1));
@@ -320,7 +320,7 @@ template <typename TInputImage, typename THessianImage, typename TOutputImage>
 void
 MultiScaleHessianBasedMeasureImageFilter<TInputImage, THessianImage, TOutputImage>::SetSigmaStepMethodToEquispaced()
 {
-  this->SetSigmaStepMethod(Self::EquispacedSigmaSteps);
+  this->SetSigmaStepMethod(Self::SigmaStepMethodEnum::EquispacedSigmaSteps);
 }
 
 
@@ -328,7 +328,7 @@ template <typename TInputImage, typename THessianImage, typename TOutputImage>
 void
 MultiScaleHessianBasedMeasureImageFilter<TInputImage, THessianImage, TOutputImage>::SetSigmaStepMethodToLogarithmic()
 {
-  this->SetSigmaStepMethod(Self::LogarithmicSigmaSteps);
+  this->SetSigmaStepMethod(Self::SigmaStepMethodEnum::LogarithmicSigmaSteps);
 }
 
 
@@ -362,7 +362,7 @@ MultiScaleHessianBasedMeasureImageFilter<TInputImage, THessianImage, TOutputImag
   os << indent << "SigmaMinimum:  " << m_SigmaMinimum << std::endl;
   os << indent << "SigmaMaximum:  " << m_SigmaMaximum << std::endl;
   os << indent << "NumberOfSigmaSteps:  " << m_NumberOfSigmaSteps << std::endl;
-  os << indent << "SigmaStepMethod:  " << m_SigmaStepMethod << std::endl;
+  os << indent << "SigmaStepMethod:  " << itkExposeEnumValue(m_SigmaStepMethod) << std::endl;
   os << indent << "HessianToMeasureFilter: " << m_HessianToMeasureFilter << std::endl;
   os << indent << "NonNegativeHessianBasedMeasure:  " << m_NonNegativeHessianBasedMeasure << std::endl;
   os << indent << "GenerateScalesOutput: " << m_GenerateScalesOutput << std::endl;

@@ -27,6 +27,28 @@
 
 namespace itk
 {
+/**\class LaplacianDeformationQuadEdgeMeshFilterEnums
+ * \brief Contains all enum classes used by LaplacianDeformationQuadEdgeMeshFilter class.
+ * \ingroup ITKQuadEdgeMeshFiltering
+ */
+class LaplacianDeformationQuadEdgeMeshFilterEnums
+{
+public:
+  /**\class Area
+   * \ingroup ITKQuadEdgeMeshFiltering
+   * Type of area*/
+  enum class Area : uint8_t
+  {
+    /** Do not use any area information*/
+    NONE = 0,
+    /** Use a mixed area*/
+    MIXEDAREA
+  };
+};
+// Define how to print enumeration
+extern std::ostream &
+operator<<(std::ostream & out, const LaplacianDeformationQuadEdgeMeshFilterEnums::Area value);
+
 /** \class LaplacianDeformationQuadEdgeMeshFilter
  *
  *  \brief (abstract) base class for laplacian surface mesh deformation.
@@ -159,17 +181,16 @@ public:
   itkSetMacro(Order, unsigned int);
   itkGetMacro(Order, unsigned int);
 
-  enum AreaType
-  {
-    /** Do not use any area information*/
-    NONE = 0,
-    /** Use a mixed area*/
-    MIXEDAREA
-  };
+  using AreaEnum = LaplacianDeformationQuadEdgeMeshFilterEnums::Area;
+#if !defined(ITK_LEGACY_REMOVE)
+  /**Exposes enums values for backwards compatibility*/
+  static constexpr AreaEnum NONE = AreaEnum::NONE;
+  static constexpr AreaEnum MIXEDAREA = AreaEnum::MIXEDAREA;
+#endif
 
   /** Set/Get the area normalization type */
-  itkSetMacro(AreaComputationType, AreaType);
-  itkGetMacro(AreaComputationType, AreaType);
+  itkSetEnumMacro(AreaComputationType, AreaEnum);
+  itkGetMacro(AreaComputationType, AreaEnum);
 
 #ifdef ITK_USE_CONCEPT_CHECKING
   itkConceptMacro(SameDimensionCheck1, (Concept::SameDimension<InputPointDimension, OutputPointDimension>));
@@ -215,7 +236,7 @@ protected:
   CoefficientsComputationType * m_CoefficientsMethod;
 
   unsigned int m_Order{ 1 };
-  AreaType     m_AreaComputationType;
+  AreaEnum     m_AreaComputationType;
 
   void
   PrintSelf(std::ostream & os, Indent indent) const override;

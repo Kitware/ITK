@@ -87,7 +87,7 @@ public:
       std::cout << std::endl;
       std::cout << "With value     = " << m_Optimizer->GetValue();
       std::cout << std::endl;
-      std::cout << "Stop condition = " << m_Optimizer->GetStopCondition();
+      std::cout << "Stop condition = " << itkExposeEnumValue(m_Optimizer->GetStopCondition());
       std::cout << std::endl;
     }
   }

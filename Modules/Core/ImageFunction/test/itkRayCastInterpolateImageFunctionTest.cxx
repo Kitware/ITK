@@ -132,5 +132,17 @@ itkRayCastInterpolateImageFunctionTest(int itkNotUsed(argc), char * itkNotUsed(a
 
   ITK_TEST_EXPECT_TRUE(itk::Math::FloatAlmostEqual(integral, 1276.));
 
+  /// //Test streaming enumeration for RayCastHelperEnums::TraversalDirection elements
+  //    const std::set<RayCastHelperEnums::TraversalDirection> allTraversalDirection{
+  //            RayCastHelperEnums::TraversalDirection::UNDEFINED_DIRECTION,
+  //            RayCastHelperEnums::TraversalDirection::TRANSVERSE_IN_X,
+  //            RayCastHelperEnums::TraversalDirection::TRANSVERSE_IN_Y,
+  //            RayCastHelperEnums::TraversalDirection::TRANSVERSE_IN_Z,
+  //            RayCastHelperEnums::TraversalDirection::LAST_DIRECTION};
+  //    for(const auto & ee : allTraversalDirection)
+  //    {
+  //        std::cout << "STREAMED ENUM VALUE RayCastHelperEnums::TraversalDirection: " << ee << std::endl;
+  //    }
+
   return EXIT_SUCCESS;
 }

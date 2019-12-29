@@ -15,26 +15,23 @@
  *  limitations under the License.
  *
  *=========================================================================*/
-#include "itkLoggerThreadWrapper.h"
+#include "../include/itkConnectedThresholdImageFilter.h"
 
 namespace itk
 {
+/** Print enum values */
 std::ostream &
-operator<<(std::ostream & out, const LoggerThreadWrapperOperationType value)
+operator<<(std::ostream & out, const ConnectedThresholdImageFilterEnums::Connectivity value)
 {
   return out << [value] {
     switch (value)
     {
-      case LoggerThreadWrapperOperationType::SET_PRIORITY_LEVEL:
-        return "LoggerThreadWrapperOperationType::SET_PRIORITY_LEVEL";
-      case LoggerThreadWrapperOperationType::SET_LEVEL_FOR_FLUSHING:
-        return "LoggerThreadWrapperOperationType::SET_LEVEL_FOR_FLUSHING";
-      case LoggerThreadWrapperOperationType::ADD_LOG_OUTPUT:
-        return "LoggerThreadWrapperOperationType::ADD_LOG_OUTPUT";
-      case LoggerThreadWrapperOperationType::WRITE:
-        return "LoggerThreadWrapperOperationType::WRITE";
+      case ConnectedThresholdImageFilterEnums::Connectivity::FaceConnectivity:
+        return "itk::ConnectedThresholdImageFilterEnums::Connectivity::FaceConnectivity";
+      case ConnectedThresholdImageFilterEnums::Connectivity::FullConnectivity:
+        return "itk::ConnectedThresholdImageFilterEnums::Connectivity::FullConnectivity";
       default:
-        return "INVALID VALUE FOR LoggerThreadWrapperOperationType";
+        return "INVALID VALUE FOR itk::ConnectedThresholdImageFilterEnums::Connectivity";
     }
   }();
 }
