@@ -1,90 +1,118 @@
-IF("${ITK_COMMON_BUILD_TYPE}" MATCHES "SHARED")
-  SET(BUILD_SHARED_LIBS ON)
-ENDIF("${ITK_COMMON_BUILD_TYPE}" MATCHES "SHARED")
+#==========================================================================
+#
+#   Copyright NumFOCUS
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#          http://www.apache.org/licenses/LICENSE-2.0.txt
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+#
+#==========================================================================*/
 
-#-----------------------------------------------------------------------------
-# Explicit Instantiation config
-OPTION(ITK_EXPLICIT_INSTANTIATION "Try to explicitly build some of the core templates explictitly rather than over and over again." OFF)
-MARK_AS_ADVANCED(ITK_EXPLICIT_INSTANTIATION)
-# Display a warning message if we try to build explicit instantiations on windows with
-# shared libraries. VXL is not linking using shared libs on windows.
-IF(ITK_EXPLICIT_INSTANTIATION AND WIN32 AND BUILD_SHARED_LIBS)
-  MESSAGE("Explicit Instiantiation does not work on Windows platform with shared libraries. Turn BUILD_SHARED_LIBS OFF.")
-ENDIF(ITK_EXPLICIT_INSTANTIATION AND WIN32 AND BUILD_SHARED_LIBS)
-
-#-----------------------------------------------------------------------------
-# Find wrapping language API libraries.
-IF(ITK_CSWIG_TCL)
-  FIND_PACKAGE(TCL)
-  # Hide useless settings provided by FindTCL.
-  FOREACH(entry TCL_LIBRARY_DEBUG
-                TK_LIBRARY_DEBUG
-                TCL_STUB_LIBRARY
-                TCL_STUB_LIBRARY_DEBUG
-                TK_STUB_LIBRARY
-                TK_STUB_LIBRARY_DEBUG
-                TK_WISH)
-    SET(${entry} "${${entry}}" CACHE INTERNAL "This value is not used by ITK.")
-  ENDFOREACH(entry)
-ENDIF(ITK_CSWIG_TCL)
-
-IF(ITK_CSWIG_PYTHON)
-  INCLUDE(${CMAKE_ROOT}/Modules/FindPythonLibs.cmake)
-  FIND_PROGRAM(PYTHON_EXECUTABLE
-    NAMES python python2.3 python2.2 python2.1 python2.0 python1.6 python1.5 
-    PATHS
-    [HKEY_LOCAL_MACHINE\\SOFTWARE\\Python\\PythonCore\\2.3\\InstallPath]
-    [HKEY_LOCAL_MACHINE\\SOFTWARE\\Python\\PythonCore\\2.2\\InstallPath]
-    [HKEY_LOCAL_MACHINE\\SOFTWARE\\Python\\PythonCore\\2.1\\InstallPath]
-    [HKEY_LOCAL_MACHINE\\SOFTWARE\\Python\\PythonCore\\2.0\\InstallPath]
-    [HKEY_LOCAL_MACHINE\\SOFTWARE\\Python\\PythonCore\\1.6\\InstallPath]
-    [HKEY_LOCAL_MACHINE\\SOFTWARE\\Python\\PythonCore\\1.5\\InstallPath]
+cmake_minimum_required(VERSION 3.16.3 FATAL_ERROR)
+foreach(p
+    ## Only policies introduced after the cmake_minimum_required
+    ## version need to explicitly be set to NEW.
+    CMP0070 #3.10.0 Define ``file(GENERATE)`` behavior for relative paths.
+    CMP0071 #3.10.0 Let ``AUTOMOC`` and ``AUTOUIC`` process ``GENERATED`` files.
     )
-  MARK_AS_ADVANCED(PYTHON_EXECUTABLE)
-ENDIF(ITK_CSWIG_PYTHON)
+  if(POLICY ${p})
+    cmake_policy(SET ${p} NEW)
+  endif()
+endforeach()
 
-IF(ITK_CSWIG_JAVA)
-  FIND_PACKAGE(Java)
-  FIND_PACKAGE(JNI)
-ENDIF(ITK_CSWIG_JAVA)
+project(WrapITK)
 
-IF(ITK_CSWIG_PERL)
-  FIND_PACKAGE(Perl)
-  FIND_PACKAGE(PerlLibs)
-ENDIF(ITK_CSWIG_PERL)
 
-MARK_AS_ADVANCED(ITK_CSWIG_PYTHON)
-MARK_AS_ADVANCED(ITK_CSWIG_TCL)
-MARK_AS_ADVANCED(ITK_CSWIG_JAVA)
-MARK_AS_ADVANCED(ITK_CSWIG_PERL)
-MARK_AS_ADVANCED(CABLE_INDEX)
-MARK_AS_ADVANCED(CSWIG)
-MARK_AS_ADVANCED(GCCXML)
+enable_testing()
 
-# set a variable to determine if 
-# the CSwig directory should be used
-SET(ITK_CSWIG_DIR 0)
-IF(ITK_CSWIG_TCL)
-  SET(ITK_CSWIG_DIR 1)
-ENDIF(ITK_CSWIG_TCL)
-IF(ITK_CSWIG_PYTHON)
-  SET(ITK_CSWIG_DIR 1)
-ENDIF(ITK_CSWIG_PYTHON)
-IF(ITK_CSWIG_JAVA)
-  SET(ITK_CSWIG_DIR 1)
-ENDIF(ITK_CSWIG_JAVA)
+###############################################################################
+# Configure installation
+###############################################################################
 
-IF(ITK_CSWIG_DIR)
-  SUBDIRS(CSwig)
-ENDIF(ITK_CSWIG_DIR)
+if(ITK_INSTALL_PACKAGE_DIR)
+  string(REGEX REPLACE "^/" "" path "${ITK_INSTALL_PACKAGE_DIR}/WrapITK/")
+else()
+  set(path "lib/InsightToolkit/WrapITK/")
+endif()
+set(WRAP_ITK_INSTALL_PREFIX "${path}" CACHE INTERNAL "subpath where where most of WrapITK files will be installed")
 
-IF(USE_WRAP_ITK)
-  add_subdirectory(WrapITK)
-  # be sure that wrapitk is not used with the older system
-  FOREACH(lang TCL PYTHON JAVA)
-    IF(ITK_CSWIG_${lang} AND WRAP_ITK_${lang})
-      MESSAGE(FATAL_ERROR "ITK_CSWIG_${lang} and WRAP_ITK_${lang} can't be used together. Please disable one of them.")
-    ENDIF(ITK_CSWIG_${lang} AND WRAP_ITK_${lang})
-  ENDFOREACH(lang)
-ENDIF(USE_WRAP_ITK)
+# Output directories.
+set(WRAP_ITK_CONFIG_DIR "${WrapITK_SOURCE_DIR}/")
+set(WRAP_ITK_CMAKE_DIR "${WrapITK_SOURCE_DIR}")
+set(ITK_WRAP_JAVA_DIR "${WrapITK_BINARY_DIR}/Java")
+set(WRAPPER_MASTER_INDEX_OUTPUT_DIR "${ITK_DIR}/Wrapping/Typedefs" CACHE INTERNAL "typedefs dir")
 
+if(NOT CMAKE_LIBRARY_OUTPUT_DIRECTORY)
+  # See ITK/CMakeLists.txt for rational for overwriting multi-config default behavior of appending $<CONFIG>
+  set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "$<1:${WrapITK_BINARY_DIR}/lib>" CACHE INTERNAL "Single output directory for building all libraries.")
+endif()
+
+if(NOT EXECUTABLE_OUTPUT_PATH)
+  set(EXECUTABLE_OUTPUT_PATH ${WrapITK_BINARY_DIR}/bin CACHE INTERNAL "Single output directory for building all executables.")
+endif()
+
+# Set WRAP_ITK_INSTALL_COMPONENT_IDENTIFIER to a non-null value, like
+# "Wrapping", which will be inserted into the wrapping install component name.
+# This can be used to split installation package components.
+if(NOT WRAP_ITK_INSTALL_COMPONENT_IDENTIFIER)
+  set(WRAP_ITK_INSTALL_COMPONENT_IDENTIFIER "")
+endif()
+
+# Set WRAP_ITK_INSTALL_COMPONENT_PER_MODULE to 1 to have wrapping install
+# component names prefixed with their respective module name.
+# This can be used to have fine-control over the split of installation.
+if(NOT DEFINED WRAP_ITK_INSTALL_COMPONENT_PER_MODULE)
+  set(WRAP_ITK_INSTALL_COMPONENT_PER_MODULE 0)
+endif()
+
+mark_as_advanced(CMAKE_LIBRARY_OUTPUT_DIRECTORY EXECUTABLE_OUTPUT_PATH WRAP_ITK_INSTALL_PREFIX)
+
+set(CXX_TEST_PATH ${EXECUTABLE_OUTPUT_PATH})
+
+###############################################################################
+# Additional files for installation
+###############################################################################
+
+set(WRAP_ITK_TYPEDEFS_DIRECTORY "${ITK_DIR}/Wrapping/Typedefs")
+set(WRAP_ITK_LIB_DIRECTORY  "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}")
+
+###############################################################################
+# Setup test driver
+###############################################################################
+
+set(ITK_TEST_DRIVER "itkTestDriver")
+
+###############################################################################
+# The real work on wrappers
+###############################################################################
+
+include(ConfigureWrapping.cmake)
+
+###############################################################################
+# let the different generators running some code before begining to parse the
+# modules
+###############################################################################
+
+itk_wrap_modules()
+
+###############################################################################
+# Configure specific wrapper modules
+###############################################################################
+
+add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/Modules" "${CMAKE_CURRENT_BINARY_DIR}/Modules")
+
+
+###############################################################################
+# let the different generators running some code after have parsed all the
+# modules
+###############################################################################
+
+itk_end_wrap_modules()

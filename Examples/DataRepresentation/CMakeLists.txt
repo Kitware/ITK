@@ -1,6 +1,3 @@
-SUBDIRS( 
-  Containers
-  Image
-  Mesh
-  Path
-  )
+add_subdirectory(Image)
+add_subdirectory(Mesh)
+add_subdirectory(Path)
