@@ -1,101 +1,99 @@
 /*=========================================================================
-
-  Program:   Insight Segmentation & Registration Toolkit
-  Module:    DicomPrintPatientInformation.cxx
-  Language:  C++
-  Date:      $Date$
-  Version:   $Revision$
-
-  Copyright (c) Insight Software Consortium. All rights reserved.
-  See ITKCopyright.txt or http://www.itk.org/HTML/Copyright.htm for details.
-
-     This software is distributed WITHOUT ANY WARRANTY; without even 
-     the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR 
-     PURPOSE.  See the above copyright notices for more information.
-
-=========================================================================*/
-#if defined(_MSC_VER)
-#pragma warning ( disable : 4786 )
-#endif
-
-#ifdef __BORLANDC__
-#define ITK_LEAN_AND_MEAN
-#endif
+ *
+ *  Copyright NumFOCUS
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *         https://www.apache.org/licenses/LICENSE-2.0.txt
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *
+ *=========================================================================*/
 
 //  Software Guide : BeginLatex
 //
-//  This example illustrates how to print out some patient information from the
-//  header of the DICOM file.
+//  This example illustrates how to print out some patient information from
+//  the header of the DICOM file.
 //
-//  Software Guide : EndLatex 
+//  Software Guide : EndLatex
 
-
-#include "itkDICOMImageIO2.h"
+#include "itkGDCMImageIO.h"
 #include "itkImageFileReader.h"
+#include "itkMetaDataObject.h"
 
-int main( int argc, char* argv[] )
+std::string
+FindDicomTag(const std::string &             entryId,
+             const itk::GDCMImageIO::Pointer dicomIO)
 {
+  std::string tagvalue;
+  const bool  found = dicomIO->GetValueFromTag(entryId, tagvalue);
+  if (!found)
+  {
+    tagvalue = "NOT FOUND";
+  }
+  return tagvalue;
+}
 
-  if( argc < 2 )
-    {
+
+int
+main(int argc, char * argv[])
+{
+  if (argc < 2)
+  {
     std::cerr << "Usage: " << argv[0] << " DicomFile " << std::endl;
     return EXIT_FAILURE;
-    }
+  }
 
-  typedef itk::Image<signed short,2>              ImageType;
-  typedef itk::ImageFileReader< ImageType >       ReaderType;
+  using PixelType = short;
+  constexpr unsigned int Dimension = 2;
 
-  itk::DICOMImageIO2::Pointer dicomIO = itk::DICOMImageIO2::New();
+  using ImageType = itk::Image<PixelType, Dimension>;
+  using ReaderType = itk::ImageFileReader<ImageType>;
 
-  ReaderType::Pointer reader = ReaderType::New();
+  auto reader = ReaderType::New();
 
-  reader->SetFileName( argv[1] );
+  auto dicomIO = itk::GDCMImageIO::New();
 
-  reader->SetImageIO( dicomIO );
+  reader->SetFileName(argv[1]);
+  reader->SetImageIO(dicomIO);
 
   try
-    {
+  {
     reader->Update();
-    }
-  catch (itk::ExceptionObject &ex)
-    {
+  }
+  catch (const itk::ExceptionObject & ex)
+  {
     std::cout << ex << std::endl;
     return EXIT_FAILURE;
-    }
+  }
 
 
-  const unsigned int length = 2048;
-  
-  char patientName[  length ];
-  char patientID[    length ];
-  char patientSex[   length ];
-  char patientAge[   length ];
-  char studyDate[    length ];
-  char modality[     length ];
-  char manufacturer[ length ];
-  char institution[  length ];
-  char model[        length ];
+  const std::string patientName = FindDicomTag("0010|0010", dicomIO);
+  const std::string patientID = FindDicomTag("0010|0020", dicomIO);
+  const std::string patientSex = FindDicomTag("0010|0040", dicomIO);
+  const std::string patientAge = FindDicomTag("0010|1010", dicomIO);
+  const std::string studyDate = FindDicomTag("0008|0020", dicomIO);
+  const std::string modality = FindDicomTag("0008|0060", dicomIO);
+  const std::string manufacturer = FindDicomTag("0008|0070", dicomIO);
+  const std::string institution = FindDicomTag("0008|0080", dicomIO);
+  const std::string model = FindDicomTag("0008|1090", dicomIO);
 
-  dicomIO->GetPatientName(  patientName  );
-  dicomIO->GetPatientID(    patientID    );
-  dicomIO->GetPatientSex(   patientSex   );
-  dicomIO->GetPatientAge(   patientAge   );
-  dicomIO->GetStudyDate(    studyDate    );
-  dicomIO->GetModality(     modality     );
-  dicomIO->GetManufacturer( manufacturer );
-  dicomIO->GetInstitution(  institution  );
-  dicomIO->GetModel(        model        );
 
-  std::cout << "Patient Name : " << patientName  << std::endl;
-  std::cout << "Patient ID   : " << patientID    << std::endl;
-  std::cout << "Patient Sex  : " << patientSex   << std::endl;
-  std::cout << "Patient Age  : " << patientAge   << std::endl;
-  std::cout << "Study Date   : " << studyDate    << std::endl;
-  std::cout << "Modality     : " << modality     << std::endl;
+  std::cout << "Patient Name : " << patientName << std::endl;
+  std::cout << "Patient ID   : " << patientID << std::endl;
+  std::cout << "Patient Sex  : " << patientSex << std::endl;
+  std::cout << "Patient Age  : " << patientAge << std::endl;
+  std::cout << "Study Date   : " << studyDate << std::endl;
+  std::cout << "Modality     : " << modality << std::endl;
   std::cout << "Manufacturer : " << manufacturer << std::endl;
-  std::cout << "Institution  : " << institution  << std::endl;
-  std::cout << "Model        : " << model        << std::endl;
+  std::cout << "Institution  : " << institution << std::endl;
+  std::cout << "Model        : " << model << std::endl;
 
   return EXIT_SUCCESS;
-
 }
