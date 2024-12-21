@@ -1,32 +1,26 @@
 /*=========================================================================
-
-  Program:   Insight Segmentation & Registration Toolkit
-  Module:    MathematicalMorphologyBinaryFilters.cxx
-  Language:  C++
-  Date:      $Date$
-  Version:   $Revision$
-
-  Copyright (c) Insight Software Consortium. All rights reserved.
-  See ITKCopyright.txt or http://www.itk.org/HTML/Copyright.htm for details.
-
-     This software is distributed WITHOUT ANY WARRANTY; without even 
-     the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR 
-     PURPOSE.  See the above copyright notices for more information.
-
-=========================================================================*/
-#if defined(_MSC_VER)
-#pragma warning ( disable : 4786 )
-#endif
-
-#ifdef __BORLANDC__
-#define ITK_LEAN_AND_MEAN
-#endif
+ *
+ *  Copyright NumFOCUS
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *         https://www.apache.org/licenses/LICENSE-2.0.txt
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *
+ *=========================================================================*/
 
 //  Software Guide : BeginCommandLineArgs
 //    INPUTS: {BrainProtonDensitySlice.png}
 //    OUTPUTS: {MathematicalMorphologyBinaryErosionOutput.png}
 //    OUTPUTS: {MathematicalMorphologyBinaryDilationOutput.png}
-//    150 180
+//    ARGUMENTS:    150 180
 //  Software Guide : EndCommandLineArgs
 
 //  Software Guide : BeginLatex
@@ -34,14 +28,15 @@
 //  The following section illustrates the use of filters that perform basic
 //  mathematical morphology operations on binary images. The
 //  \doxygen{BinaryErodeImageFilter} and \doxygen{BinaryDilateImageFilter} are
-//  described here. The filter names clearly specify the type of image on which
-//  they operate.  The header files required to construct a simple example of
-//  the use of the mathematical morphology filters are included below.
+//  described here. The filter names clearly specify the type of image on
+//  which they operate.  The header files required to construct a simple
+//  example of the use of the mathematical morphology filters are included
+//  below.
 //
 //  \index{itk::BinaryDilateImageFilter!header}
 //  \index{itk::BinaryErodeImageFilter!header}
 //
-//  Software Guide : EndLatex 
+//  Software Guide : EndLatex
 
 #include "itkImage.h"
 #include "itkImageFileReader.h"
@@ -51,22 +46,23 @@
 // Software Guide : BeginCodeSnippet
 #include "itkBinaryErodeImageFilter.h"
 #include "itkBinaryDilateImageFilter.h"
-#include "itkBinaryBallStructuringElement.h" 
+#include "itkBinaryBallStructuringElement.h"
 // Software Guide : EndCodeSnippet
 
 #include "itkBinaryThresholdImageFilter.h"
 
 
-int main( int argc, char * argv[] )
+int
+main(int argc, char * argv[])
 {
-  if( argc < 6 )
-    {
+  if (argc < 6)
+  {
     std::cerr << "Usage: " << std::endl;
     std::cerr << argv[0] << "  inputImageFile  ";
     std::cerr << " outputImageFileErosion  outputImageFileDilation";
     std::cerr << " lowerThreshold upperThreshold " << std::endl;
     return EXIT_FAILURE;
-    }
+  }
 
 
   //  Software Guide : BeginLatex
@@ -74,23 +70,24 @@ int main( int argc, char * argv[] )
   //  The following code defines the input and output pixel types and their
   //  associated image types.
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  const unsigned int Dimension = 2;
-  
-  typedef unsigned char   InputPixelType;
-  typedef unsigned char   OutputPixelType;
+  constexpr unsigned int Dimension = 2;
 
-  typedef itk::Image< InputPixelType,  Dimension >   InputImageType;
-  typedef itk::Image< OutputPixelType, Dimension >   OutputImageType;
+  using InputPixelType = unsigned char;
+  using OutputPixelType = unsigned char;
+
+  using InputImageType = itk::Image<InputPixelType, Dimension>;
+  using OutputImageType = itk::Image<OutputPixelType, Dimension>;
   // Software Guide : EndCodeSnippet
 
-  typedef itk::ImageFileReader< InputImageType  >  ReaderType;
-  typedef itk::ImageFileWriter< OutputImageType >  WriterType;
+  using ReaderType = itk::ImageFileReader<InputImageType>;
+  using WriterType = itk::ImageFileWriter<OutputImageType>;
 
 
-  typedef itk::BinaryThresholdImageFilter< InputImageType, InputImageType >  ThresholdFilterType;
+  using ThresholdFilterType =
+    itk::BinaryThresholdImageFilter<InputImageType, InputImageType>;
 
 
   //  Software Guide : BeginLatex
@@ -98,7 +95,7 @@ int main( int argc, char * argv[] )
   //  Mathematical morphology operations are implemented by applying an
   //  operator over the neighborhood of each input pixel. The combination of
   //  the rule and the neighborhood is known as \emph{structuring
-  //  element}. Although some rules have become de facto standards for image
+  //  element}. Although some rules have become defacto standards for image
   //  processing, there is a good deal of freedom as to what kind of
   //  algorithmic rule should be applied to the neighborhood. The
   //  implementation in ITK follows the typical rule of minimum for
@@ -109,41 +106,39 @@ int main( int argc, char * argv[] )
   //  \doxygen{BinaryBallStructuringElement} class. This class is instantiated
   //  using the pixel type and dimension of the input image.
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  typedef itk::BinaryBallStructuringElement< 
-                      InputPixelType,
-                      Dimension  >             StructuringElementType;
+  using StructuringElementType =
+    itk::BinaryBallStructuringElement<InputPixelType, Dimension>;
   // Software Guide : EndCodeSnippet
 
   //  Software Guide : BeginLatex
   //
-  //  The structuring element type is then used along with the input and output
-  //  image types for instantiating the type of the filters.
+  //  The structuring element type is then used along with the input and
+  //  output image types for instantiating the type of the filters.
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
 
   // Software Guide : BeginCodeSnippet
-  typedef itk::BinaryErodeImageFilter<
-                            InputImageType, 
-                            OutputImageType,
-                            StructuringElementType >  ErodeFilterType;
+  using ErodeFilterType = itk::BinaryErodeImageFilter<InputImageType,
+                                                      OutputImageType,
+                                                      StructuringElementType>;
 
-  typedef itk::BinaryDilateImageFilter<
-                            InputImageType, 
-                            OutputImageType, 
-                            StructuringElementType >  DilateFilterType;
+  using DilateFilterType =
+    itk::BinaryDilateImageFilter<InputImageType,
+                                 OutputImageType,
+                                 StructuringElementType>;
   // Software Guide : EndCodeSnippet
 
 
   // Creation of Reader and Writer filters
-  ReaderType::Pointer reader = ReaderType::New();
-  WriterType::Pointer writerDilation = WriterType::New();
-  WriterType::Pointer writerErosion  = WriterType::New();
+  auto reader = ReaderType::New();
+  auto writerDilation = WriterType::New();
+  auto writerErosion = WriterType::New();
 
-  ThresholdFilterType::Pointer thresholder = ThresholdFilterType::New();
+  auto thresholder = ThresholdFilterType::New();
 
   //  Software Guide : BeginLatex
   //
@@ -155,11 +150,11 @@ int main( int argc, char * argv[] )
   //  \index{itk::BinaryDilateImageFilter!Pointer}
   //  \index{itk::BinaryErodeImageFilter!Pointer}
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  ErodeFilterType::Pointer  binaryErode  = ErodeFilterType::New();
-  DilateFilterType::Pointer binaryDilate = DilateFilterType::New();
+  auto binaryErode = ErodeFilterType::New();
+  auto binaryDilate = DilateFilterType::New();
   // Software Guide : EndCodeSnippet
 
   //  Software Guide : BeginLatex
@@ -167,11 +162,11 @@ int main( int argc, char * argv[] )
   //  The structuring element is not a reference counted class. Thus it is
   //  created as a C++ stack object instead of using \code{New()} and
   //  SmartPointers. The radius of the neighborhood associated with the
-  //  structuring element is defined with the \code{SetRadius()} method and the
-  //  \code{CreateStructuringElement()} method is invoked in order to
+  //  structuring element is defined with the \code{SetRadius()} method and
+  //  the \code{CreateStructuringElement()} method is invoked in order to
   //  initialize the operator.  The resulting structuring element is passed to
-  //  the mathematical morphology filter through the \code{SetKernel()} method,
-  //  as illustrated below.
+  //  the mathematical morphology filter through the \code{SetKernel()}
+  //  method, as illustrated below.
   //
   //  \index{itk::BinaryBallStructuringElement!SetRadius()}
   //  \index{itk::BinaryBallStructuringElement!CreateStructuringElement()}
@@ -183,53 +178,53 @@ int main( int argc, char * argv[] )
   //  \index{SetRadius()!itk::BinaryBallStructuringElement}
   //  \index{CreateStructuringElement()!itk::BinaryBallStructuringElement}
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  StructuringElementType  structuringElement;
+  StructuringElementType structuringElement;
 
-  structuringElement.SetRadius( 1 );  // 3x3 structuring element
+  structuringElement.SetRadius(1); // 3x3 structuring element
 
   structuringElement.CreateStructuringElement();
 
-  binaryErode->SetKernel(  structuringElement );
-  binaryDilate->SetKernel( structuringElement );
+  binaryErode->SetKernel(structuringElement);
+  binaryDilate->SetKernel(structuringElement);
   // Software Guide : EndCodeSnippet
 
 
-  reader->SetFileName( argv[1] );
- 
-  writerErosion->SetFileName(  argv[2] );
-  writerDilation->SetFileName( argv[3] );
-  
+  reader->SetFileName(argv[1]);
+
+  writerErosion->SetFileName(argv[2]);
+  writerDilation->SetFileName(argv[3]);
+
 
   //  Software Guide : BeginLatex
   //
   //  A binary image is provided as input to the filters. This image might be,
   //  for example, the output of a binary threshold image filter.
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
-  const InputPixelType lowerThreshold = atoi( argv[4] );
-  const InputPixelType upperThreshold = atoi( argv[5] );
+  const InputPixelType lowerThreshold = std::stoi(argv[4]);
+  const InputPixelType upperThreshold = std::stoi(argv[5]);
 
   // Software Guide : BeginCodeSnippet
-  thresholder->SetInput( reader->GetOutput() );
+  thresholder->SetInput(reader->GetOutput());
 
-  InputPixelType background =   0;
-  InputPixelType foreground = 255;
+  constexpr InputPixelType background = 0;
+  constexpr InputPixelType foreground = 255;
 
-  thresholder->SetOutsideValue( background );
-  thresholder->SetInsideValue(  foreground );
+  thresholder->SetOutsideValue(background);
+  thresholder->SetInsideValue(foreground);
 
-  thresholder->SetLowerThreshold( lowerThreshold );
-  thresholder->SetUpperThreshold( upperThreshold );
+  thresholder->SetLowerThreshold(lowerThreshold);
+  thresholder->SetUpperThreshold(upperThreshold);
   // Software Guide : EndCodeSnippet
 
 
   // Software Guide : BeginCodeSnippet
-  binaryErode->SetInput( thresholder->GetOutput() );
-  binaryDilate->SetInput( thresholder->GetOutput() );
+  binaryErode->SetInput(thresholder->GetOutput());
+  binaryDilate->SetInput(thresholder->GetOutput());
   // Software Guide : EndCodeSnippet
 
 
@@ -246,40 +241,40 @@ int main( int argc, char * argv[] )
   //  \index{SetDilateValue()!itk::BinaryDilateImageFilter}
   //  \index{SetErodeValue()!itk::BinaryErodeImageFilter}
   //
-  //  Software Guide : EndLatex 
-  
+  //  Software Guide : EndLatex
+
   // Software Guide : BeginCodeSnippet
-  binaryErode->SetErodeValue( foreground );
-  binaryDilate->SetDilateValue( foreground );
+  binaryErode->SetErodeValue(foreground);
+  binaryDilate->SetDilateValue(foreground);
   // Software Guide : EndCodeSnippet
 
 
   //  Software Guide : BeginLatex
   //
   //  The filter is executed by invoking its \code{Update()} method, or by
-  //  updating any downstream filter, like, for example, an image writer.
+  //  updating any downstream filter, such as an image writer.
   //
   //  \index{itk::BinaryDilateImageFilter!Update()}
   //  \index{itk::BinaryErodeImageFilter!Update()}
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
 
   // Software Guide : BeginCodeSnippet
-  writerDilation->SetInput( binaryDilate->GetOutput() );
+  writerDilation->SetInput(binaryDilate->GetOutput());
   writerDilation->Update();
   // Software Guide : EndCodeSnippet
 
-  writerErosion->SetInput( binaryErode->GetOutput() );
+  writerErosion->SetInput(binaryErode->GetOutput());
   writerErosion->Update();
 
   //  Software Guide : BeginLatex
-  // 
+  //
   // \begin{figure}
   // \center
-  // \includegraphics[width=0.32\textwidth]{BinaryThresholdImageFilterOutput.eps}
-  // \includegraphics[width=0.32\textwidth]{MathematicalMorphologyBinaryErosionOutput.eps}
-  // \includegraphics[width=0.32\textwidth]{MathematicalMorphologyBinaryDilationOutput.eps}
+  // \includegraphics[width=0.32\textwidth]{BinaryThresholdImageFilterOutput}
+  // \includegraphics[width=0.32\textwidth]{MathematicalMorphologyBinaryErosionOutput}
+  // \includegraphics[width=0.32\textwidth]{MathematicalMorphologyBinaryDilationOutput}
   // \itkcaption[Effect of erosion and dilation in a binary image.]{Effect of
   // erosion and dilation in a binary image.}
   // \label{fig:MathematicalMorphologyBinaryFilters}
@@ -290,9 +285,8 @@ int main( int argc, char * argv[] )
   //  brain slice. The figure shows how these operations can be used to remove
   //  spurious details from segmented images.
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
 
   return EXIT_SUCCESS;
 }
-

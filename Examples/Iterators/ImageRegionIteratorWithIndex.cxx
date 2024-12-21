@@ -1,24 +1,23 @@
 /*=========================================================================
+ *
+ *  Copyright NumFOCUS
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *         https://www.apache.org/licenses/LICENSE-2.0.txt
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *
+ *=========================================================================*/
 
-  Program:   Insight Segmentation & Registration Toolkit
-  Module:    ImageRegionIteratorWithIndex.cxx
-  Language:  C++
-  Date:      $Date$
-  Version:   $Revision$
-
-  Copyright (c) Insight Software Consortium. All rights reserved.
-  See ITKCopyright.txt or http://www.itk.org/HTML/Copyright.htm for details.
-
-     This software is distributed WITHOUT ANY WARRANTY; without even 
-     the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR 
-     PURPOSE.  See the above copyright notices for more information.
-
-=========================================================================*/
-#if defined(_MSC_VER)
-#pragma warning ( disable : 4786 )
-#endif
 //  Software Guide : BeginCommandLineArgs
-//     INPUTS: {VisibleWomanEyeSlice.png} 
+//     INPUTS:  {VisibleWomanEyeSlice.png}
 //     OUTPUTS: {ImageRegionIteratorWithIndexOutput.png}
 //  Software Guide : EndCommandLineArgs
 
@@ -26,7 +25,7 @@
 //
 // \index{Iterators!speed}
 // The ``WithIndex'' family of iterators was designed for algorithms that
-// use both the value and the location of image pixels in calculations.  Unlike
+// use both the value and the location of image pixels in calculations. Unlike
 // \doxygen{ImageRegionIterator}, which calculates an index only when
 // asked for, \doxygen{ImageRegionIteratorWithIndex} maintains its
 // index location as a member variable that is updated during the increment or
@@ -53,54 +52,48 @@
 #include "itkImageFileReader.h"
 #include "itkImageFileWriter.h"
 
-int main( int argc, char *argv[] )
+int
+main(int argc, char * argv[])
 {
   // Verify the number of parameters on the command line.
-  if ( argc < 3 )
-    {
+  if (argc < 3)
+  {
     std::cerr << "Missing parameters. " << std::endl;
     std::cerr << "Usage: " << std::endl;
-    std::cerr << argv[0]
-              << " inputImageFile outputImageFile"
-              << std::endl;
-    return -1;
-    }
+    std::cerr << argv[0] << " inputImageFile outputImageFile" << std::endl;
+    return EXIT_FAILURE;
+  }
 
   // Software Guide : BeginLatex
   //
-  // For this example, we will use an RGB pixel type so that we can process color
-  // images. Like most other ITK image iterator,
+  // For this example, we will use an RGB pixel type so that we can process
+  // color images. Like most other ITK image iterator,
   // ImageRegionIteratorWithIndex class expects the image type as its
   // single template parameter.
   //
   // Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  const unsigned int Dimension = 2;
-  
-  typedef itk::RGBPixel< unsigned char >        RGBPixelType;
-  typedef itk::Image< RGBPixelType, Dimension > ImageType;
-  
-  typedef itk::ImageRegionIteratorWithIndex< ImageType > IteratorType;
+  constexpr unsigned int Dimension = 2;
+
+  using RGBPixelType = itk::RGBPixel<unsigned char>;
+  using ImageType = itk::Image<RGBPixelType, Dimension>;
+
+  using IteratorType = itk::ImageRegionIteratorWithIndex<ImageType>;
   // Software Guide : EndCodeSnippet
-  
-  typedef itk::ImageFileReader< ImageType > ReaderType;
-  typedef itk::ImageFileWriter< ImageType > WriterType;
+
 
   ImageType::ConstPointer inputImage;
-  ReaderType::Pointer reader = ReaderType::New();
-  reader->SetFileName( argv[1] );
   try
-    {
-    reader->Update();
-    inputImage = reader->GetOutput();
-    }
-  catch ( itk::ExceptionObject &err)
-    {
-    std::cout << "ExceptionObject caught !" << std::endl; 
-    std::cout << err << std::endl; 
-    return -1;
-    }
+  {
+    inputImage = itk::ReadImage<ImageType>(argv[1]);
+  }
+  catch (const itk::ExceptionObject & err)
+  {
+    std::cerr << "ExceptionObject caught !" << std::endl;
+    std::cerr << err << std::endl;
+    return EXIT_FAILURE;
+  }
 
   // Software Guide : BeginLatex
   //
@@ -112,9 +105,9 @@ int main( int argc, char *argv[] )
   // Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  ImageType::Pointer outputImage = ImageType::New();
-  outputImage->SetRegions( inputImage->GetRequestedRegion() );
-  outputImage->CopyInformation( inputImage );
+  auto outputImage = ImageType::New();
+  outputImage->SetRegions(inputImage->GetRequestedRegion());
+  outputImage->CopyInformation(inputImage);
   outputImage->Allocate();
   // Software Guide : EndCodeSnippet
 
@@ -126,7 +119,7 @@ int main( int argc, char *argv[] )
   // Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  IteratorType outputIt( outputImage, outputImage->GetRequestedRegion() );
+  IteratorType outputIt(outputImage, outputImage->GetRequestedRegion());
   // Software Guide : EndCodeSnippet
 
   // Software Guide: BeginLatex
@@ -139,51 +132,48 @@ int main( int argc, char *argv[] )
 
   // Software Guide : BeginCodeSnippet
   ImageType::IndexType requestedIndex =
-                outputImage->GetRequestedRegion().GetIndex();
+    outputImage->GetRequestedRegion().GetIndex();
   ImageType::SizeType requestedSize =
-                outputImage->GetRequestedRegion().GetSize();
+    outputImage->GetRequestedRegion().GetSize();
 
-  for ( outputIt.GoToBegin(); !outputIt.IsAtEnd(); ++outputIt)
-    {
+  for (outputIt.GoToBegin(); !outputIt.IsAtEnd(); ++outputIt)
+  {
     ImageType::IndexType idx = outputIt.GetIndex();
-    idx[0] =  requestedIndex[0] + requestedSize[0] - 1 - idx[0];
-    outputIt.Set( inputImage->GetPixel(idx) );
-    }
+    idx[0] = requestedIndex[0] + requestedSize[0] - 1 - idx[0];
+    outputIt.Set(inputImage->GetPixel(idx));
+  }
   // Software Guide : EndCodeSnippet
 
-  WriterType::Pointer writer = WriterType::New();
-  writer->SetFileName( argv[2] );
-  writer->SetInput(outputImage);
   try
-    {
-    writer->Update();
-    }
-  catch ( itk::ExceptionObject &err)
-    {
-    std::cout << "ExceptionObject caught !" << std::endl; 
-    std::cout << err << std::endl; 
-    return -1;   
-}
+  {
+    itk::WriteImage(outputImage, argv[2]);
+  }
+  catch (const itk::ExceptionObject & err)
+  {
+    std::cerr << "ExceptionObject caught !" << std::endl;
+    std::cerr << err << std::endl;
+    return EXIT_FAILURE;
+  }
 
   // Software Guide : BeginLatex
   //
-  // Let's run this example on the image \code{VisibleWomanEyeSlice.png} found in
-  // the \code{Examples/Data} directory.
-  // Figure~\ref{fig:ImageRegionIteratorWithIndexExample} shows how the original
-  // image has been mirrored across its $x$-axis in the output.
+  // Let's run this example on the image \code{VisibleWomanEyeSlice.png} found
+  // in the \code{Examples/Data} directory.
+  // Figure~\ref{fig:ImageRegionIteratorWithIndexExample} shows how the
+  // original image has been mirrored across its $x$-axis in the output.
   //
   // \begin{figure} \center
-  // \includegraphics[width=0.44\textwidth]{VisibleWomanEyeSlice.eps}
-  // \includegraphics[width=0.44\textwidth]{ImageRegionIteratorWithIndexOutput.eps}
+  // \includegraphics[width=0.44\textwidth]{VisibleWomanEyeSlice}
+  // \includegraphics[width=0.44\textwidth]{ImageRegionIteratorWithIndexOutput}
   // \itkcaption[Using the ImageRegionIteratorWithIndex]{Results of using
-  // ImageRegionIteratorWithIndex to mirror an image across an axis. The original
-  // image is shown at left.  The mirrored output is shown at right.}
+  // ImageRegionIteratorWithIndex to mirror an image across an axis. The
+  // original image is shown at left.  The mirrored output is shown at right.}
   // \label{fig:ImageRegionIteratorWithIndexExample}
   // \end{figure}
   //
   // \index{itk::ImageRegionIteratorWithIndex!example of using|)}
   //
   // Software Guide : EndLatex
-  
-  return 0;
+
+  return EXIT_SUCCESS;
 }
