@@ -1,31 +1,25 @@
 /*=========================================================================
-
-  Program:   Insight Segmentation & Registration Toolkit
-  Module:    MinMaxCurvatureFlowImageFilter.cxx
-  Language:  C++
-  Date:      $Date$
-  Version:   $Revision$
-
-  Copyright (c) Insight Software Consortium. All rights reserved.
-  See ITKCopyright.txt or http://www.itk.org/HTML/Copyright.htm for details.
-
-     This software is distributed WITHOUT ANY WARRANTY; without even 
-     the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR 
-     PURPOSE.  See the above copyright notices for more information.
-
-=========================================================================*/
-#if defined(_MSC_VER)
-#pragma warning ( disable : 4786 )
-#endif
-
-#ifdef __BORLANDC__
-#define ITK_LEAN_AND_MEAN
-#endif
+ *
+ *  Copyright NumFOCUS
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *         https://www.apache.org/licenses/LICENSE-2.0.txt
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *
+ *=========================================================================*/
 
 //  Software Guide : BeginCommandLineArgs
-//    INPUTS: {BrainProtonDensitySlice.png}
+//    INPUTS:  {BrainProtonDensitySlice.png}
 //    OUTPUTS: {MinMaxCurvatureFlowImageFilterOutput.png}
-//    10 0.125 1
+//    ARGUMENTS:    10 0.125 1
 //  Software Guide : EndCommandLineArgs
 
 //  Software Guide : BeginLatex
@@ -33,15 +27,16 @@
 //
 // \begin{figure}
 // \center
-// \includegraphics[width=0.5\textwidth]{MinMaxCurvatureFlowFunctionDiagram.eps}
+// \includegraphics[width=0.5\textwidth]{MinMaxCurvatureFlowFunctionDiagram}
 // \itkcaption[MinMaxCurvatureFlow computation]{Elements involved in the
 //  computation of min-max curvature flow.}
 // \label{fig:MinMaxCurvatureFlowFunctionDiagram}
 // \end{figure}
 //
 //  The MinMax curvature flow filter applies a variant of the curvature flow
-//  algorithm where diffusion is turned on or off depending of the scale of the
-//  noise that one wants to remove.  The evolution speed is switched between
+//  algorithm where diffusion is turned on or off depending of the scale of
+//  the noise that one wants to remove.  The evolution speed is switched
+//  between
 //  $\min(\kappa,0)$ and $\max(\kappa,0)$ such that:
 //
 //  \begin{equation}
@@ -52,12 +47,13 @@
 //
 //  \begin{equation}
 //  F = \left\{ \begin{array} {r@{\quad:\quad}l}
-//         \max(\kappa,0) & \mbox{Average} < Threshold \\ \min(\kappa,0) & \mbox{Average} \ge Threshold 
+//         \max(\kappa,0) & \mbox{Average} < Threshold \\ \min(\kappa,0) &
+//         \mbox{Average} \ge Threshold
 //             \end{array} \right.
 //  \end{equation}
 //
 // The $Average$ is the average intensity computed over a neighborhood of a
-// user specified radius of the pixel. The choice of the radius governs the
+// user-specified radius of the pixel. The choice of the radius governs the
 // scale of the noise to be removed. The $Threshold$ is calculated as the
 // average of pixel intensities along the direction perpendicular to the
 // gradient at the \emph{extrema} of the local neighborhood.
@@ -79,7 +75,7 @@
 //
 //  \index{itk::MinMax\-Curvature\-Flow\-Image\-Filter}
 //
-//  Software Guide : EndLatex 
+//  Software Guide : EndLatex
 
 
 #include "itkImage.h"
@@ -89,45 +85,46 @@
 
 //  Software Guide : BeginLatex
 //
-//  The first step required to use the \doxygen{MinMaxCurvatureFlowImageFilter}
-//  is to include its header file.
+//  The first step required to use the
+//  \doxygen{MinMaxCurvatureFlowImageFilter} is to include its header file.
 //
 //  \index{itk::MinMax\-Curvature\-Flow\-Image\-Filter!header}
 //
-//  Software Guide : EndLatex 
+//  Software Guide : EndLatex
 
 // Software Guide : BeginCodeSnippet
 #include "itkMinMaxCurvatureFlowImageFilter.h"
 // Software Guide : EndCodeSnippet
 
 
-int main( int argc, char * argv[] )
+int
+main(int argc, char * argv[])
 {
-  if( argc < 6 ) 
-    { 
+  if (argc < 6)
+  {
     std::cerr << "Usage: " << std::endl;
     std::cerr << argv[0] << "  inputImageFile  outputImageFile  ";
     std::cerr << "numberOfIterations  timeStep  stencilRadius" << std::endl;
     return EXIT_FAILURE;
-    }
+  }
   //  Software Guide : BeginLatex
   //
   //  Types should be selected based on the pixel types required for the
   //  input and output images. The input and output image types are
   //  instantiated.
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  typedef    float    InputPixelType;
-  typedef    float    OutputPixelType;
+  using InputPixelType = float;
+  using OutputPixelType = float;
 
-  typedef itk::Image< InputPixelType,  2 >   InputImageType;
-  typedef itk::Image< OutputPixelType, 2 >   OutputImageType;
+  using InputImageType = itk::Image<InputPixelType, 2>;
+  using OutputImageType = itk::Image<OutputPixelType, 2>;
   // Software Guide : EndCodeSnippet
 
 
-  typedef itk::ImageFileReader< InputImageType >  ReaderType;
+  using ReaderType = itk::ImageFileReader<InputImageType>;
 
 
   //  Software Guide : BeginLatex
@@ -140,17 +137,17 @@ int main( int argc, char * argv[] )
   //  \index{itk::MinMax\-Curvature\-Flow\-Image\-Filter!New()}
   //  \index{itk::MinMax\-Curvature\-Flow\-Image\-Filter!Pointer}
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  typedef itk::MinMaxCurvatureFlowImageFilter<
-               InputImageType, OutputImageType >  FilterType;
-  FilterType::Pointer filter = FilterType::New();
+  using FilterType =
+    itk::MinMaxCurvatureFlowImageFilter<InputImageType, OutputImageType>;
+  auto filter = FilterType::New();
   // Software Guide : EndCodeSnippet
 
 
-  ReaderType::Pointer reader = ReaderType::New();
-  reader->SetFileName( argv[1] );
+  auto reader = ReaderType::New();
+  reader->SetFileName(argv[1]);
 
 
   //  Software Guide : BeginLatex
@@ -158,29 +155,29 @@ int main( int argc, char * argv[] )
   //  The input image can be obtained from the output of another filter. Here,
   //  an image reader is used as source.
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  filter->SetInput( reader->GetOutput() );
+  filter->SetInput(reader->GetOutput());
   // Software Guide : EndCodeSnippet
 
 
-  const unsigned int numberOfIterations = atoi( argv[3] );
-  const double       timeStep = atof( argv[4] );
-  typedef FilterType::RadiusValueType RadiusType;
-  const RadiusType radius = atol( argv[5] );
+  const unsigned int numberOfIterations = std::stoi(argv[3]);
+  const double       timeStep = std::stod(argv[4]);
+  using RadiusType = FilterType::RadiusValueType;
+  const RadiusType radius = atol(argv[5]);
 
   //  Software Guide : BeginLatex
   //
   //  The \doxygen{MinMaxCurvatureFlowImageFilter} requires the two normal
   //  parameters of the CurvatureFlow image, the number of iterations to be
   //  performed and the time step used in the computation of the level set
-  //  evolution. In addition to them, the radius of the neighborhood is also
+  //  evolution. In addition, the radius of the neighborhood is also
   //  required. This last parameter is passed using the
   //  \code{SetStencilRadius()} method. Note that the radius is provided as an
-  //  integer number since it is referring to a number of pixels from the center
-  //  to the border of the neighborhood. Then the filter can be executed by
-  //  invoking \code{Update()}.
+  //  integer number since it is referring to a number of pixels from the
+  //  center to the border of the neighborhood. Then the filter can be
+  //  executed by invoking \code{Update()}.
   //
   //  \index{itk::MinMax\-Curvature\-Flow\-Image\-Filter!Update()}
   //  \index{itk::MinMax\-Curvature\-Flow\-Image\-Filter!SetTimeStep()}
@@ -188,12 +185,12 @@ int main( int argc, char * argv[] )
   //  \index{SetTimeStep()!itk::MinMax\-Curvature\-Flow\-Image\-Filter}
   //  \index{SetNumberOfIterations()!itk::MinMax\-Curvature\-Flow\-Image\-Filter}
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  filter->SetTimeStep( timeStep );
-  filter->SetNumberOfIterations( numberOfIterations );
-  filter->SetStencilRadius( radius );
+  filter->SetTimeStep(timeStep);
+  filter->SetNumberOfIterations(numberOfIterations);
+  filter->SetStencilRadius(radius);
   filter->Update();
   // Software Guide : EndCodeSnippet
 
@@ -205,46 +202,46 @@ int main( int argc, char * argv[] )
   //  $10$, more iterations will result in further smoothing and will
   //  increase the computing time linearly. The radius of the stencil can be
   //  typically $1$. The \emph{edge-preserving} characteristic is not perfect
-  //  on this filter, some degradation will occur on the edges and will
+  //  on this filter. Some degradation will occur on the edges and will
   //  increase as the number of iterations is increased.
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
 
   //  Software Guide : BeginLatex
   //
   //  If the output of this filter has been connected to other filters down
-  //  the pipeline, updating any of the downstream filters would have
-  //  triggered the execution of this one. For example, a writer filter could
-  //  have been used after the curvature flow filter.
+  //  the pipeline, updating any of the downstream filters will
+  //  trigger the execution of this one. For example, a writer filter can
+  //  be used after the curvature flow filter.
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
-  typedef unsigned char WritePixelType;
-  typedef itk::Image< WritePixelType, 2 > WriteImageType;
-  typedef itk::RescaleIntensityImageFilter< 
-               OutputImageType, WriteImageType > RescaleFilterType;
-  RescaleFilterType::Pointer rescaler = RescaleFilterType::New();
-  rescaler->SetOutputMinimum(   0 );
-  rescaler->SetOutputMaximum( 255 );
+  using WritePixelType = unsigned char;
+  using WriteImageType = itk::Image<WritePixelType, 2>;
+  using RescaleFilterType =
+    itk::RescaleIntensityImageFilter<OutputImageType, WriteImageType>;
+  auto rescaler = RescaleFilterType::New();
+  rescaler->SetOutputMinimum(0);
+  rescaler->SetOutputMaximum(255);
 
-  typedef itk::ImageFileWriter< WriteImageType >  WriterType;
-  WriterType::Pointer writer = WriterType::New();
-  writer->SetFileName( argv[2] );
- 
+  using WriterType = itk::ImageFileWriter<WriteImageType>;
+  auto writer = WriterType::New();
+  writer->SetFileName(argv[2]);
+
   // Software Guide : BeginCodeSnippet
-  rescaler->SetInput( filter->GetOutput() );
-  writer->SetInput( rescaler->GetOutput() );
+  rescaler->SetInput(filter->GetOutput());
+  writer->SetInput(rescaler->GetOutput());
   writer->Update();
   // Software Guide : EndCodeSnippet
 
 
   //  Software Guide : BeginLatex
-  //  
+  //
   // \begin{figure}
   // \center
-  // \includegraphics[width=0.44\textwidth]{BrainProtonDensitySlice.eps}
-  // \includegraphics[width=0.44\textwidth]{MinMaxCurvatureFlowImageFilterOutput.eps}
+  // \includegraphics[width=0.44\textwidth]{BrainProtonDensitySlice}
+  // \includegraphics[width=0.44\textwidth]{MinMaxCurvatureFlowImageFilterOutput}
   // \itkcaption[MinMaxCurvatureFlowImageFilter output]{Effect of the
   // MinMaxCurvatureFlowImageFilter on a slice from a MRI proton density image
   // of the brain.}
@@ -256,18 +253,17 @@ int main( int argc, char * argv[] )
   //  brain. In this example the filter was run with a time step of $0.125$,
   //  $10$ iterations and a radius of $1$.  The figure shows how homogeneous
   //  regions are smoothed and edges are preserved. Notice also, that the
-  //  results in the figure has sharper edges than the same example using
+  //  result in the figure has sharper edges than the same example using
   //  simple curvature flow in Figure
   //  \ref{fig:CurvatureFlowImageFilterInputOutput}.
-  //  
+  //
   //  \relatedClasses
   //  \begin{itemize}
   //  \item \doxygen{CurvatureFlowImageFilter}
   //  \end{itemize}
   //
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   return EXIT_SUCCESS;
 }
-
