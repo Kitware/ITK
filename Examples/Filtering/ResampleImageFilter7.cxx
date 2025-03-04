@@ -1,37 +1,31 @@
 /*=========================================================================
-
-  Program:   Insight Segmentation & Registration Toolkit
-  Module:    ResampleImageFilter7.cxx
-  Language:  C++
-  Date:      $Date$
-  Version:   $Revision$
-
-  Copyright (c) Insight Software Consortium. All rights reserved.
-  See ITKCopyright.txt or http://www.itk.org/HTML/Copyright.htm for details.
-
-     This software is distributed WITHOUT ANY WARRANTY; without even 
-     the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR 
-     PURPOSE.  See the above copyright notices for more information.
-
-=========================================================================*/
-#if defined(_MSC_VER)
-#pragma warning ( disable : 4786 )
-#endif
-
-#ifdef __BORLANDC__
-#define ITK_LEAN_AND_MEAN
-#endif
+ *
+ *  Copyright NumFOCUS
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *         https://www.apache.org/licenses/LICENSE-2.0.txt
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *
+ *=========================================================================*/
 
 //  Software Guide : BeginLatex
 //
 //  The following example illustrates how to use the
-//  \doxygen{BSplineInterpolateImageFunction} for resampling an image.  In this
-//  particular case an \doxygen{AffineTransform} is used to map the input space
-//  into the output space.
+//  \doxygen{BSplineInterpolateImageFunction} for resampling an image.  In
+//  this particular case an \doxygen{AffineTransform} is used to map the input
+//  space into the output space.
 //
 //  \index{itk::AffineTransform!resampling}
 //
-//  Software Guide : EndLatex 
+//  Software Guide : EndLatex
 
 
 #include "itkImage.h"
@@ -40,81 +34,83 @@
 #include "itkResampleImageFilter.h"
 #include "itkBSplineInterpolateImageFunction.h"
 
-
 //  Software Guide : BeginLatex
 //
 //  The header of the affine transform is included below.
 //
-//  Software Guide : EndLatex 
+//  Software Guide : EndLatex
 
 // Software Guide : BeginCodeSnippet
 #include "itkAffineTransform.h"
 // Software Guide : EndCodeSnippet
 
 
-int main( int argc, char * argv[] )
+int
+main(int argc, char * argv[])
 {
-  if( argc < 4 )
-    {
+  if (argc < 4)
+  {
     std::cerr << "Usage: " << std::endl;
-    std::cerr << argv[0] << "  inputImageFile  outputImageFile  degrees" << std::endl; 
+    std::cerr << argv[0] << "  inputImageFile  outputImageFile  degrees"
+              << std::endl;
     return EXIT_FAILURE;
-    }
+  }
 
-  const     unsigned int   Dimension = 2;
-  typedef   unsigned char  InputPixelType;
-  typedef   unsigned char  OutputPixelType;
+  constexpr unsigned int Dimension = 2;
+  using InputPixelType = unsigned char;
+  using OutputPixelType = unsigned char;
 
-  typedef itk::Image< InputPixelType,  Dimension >   InputImageType;
-  typedef itk::Image< OutputPixelType, Dimension >   OutputImageType;
+  using InputImageType = itk::Image<InputPixelType, Dimension>;
+  using OutputImageType = itk::Image<OutputPixelType, Dimension>;
 
-  typedef itk::ImageFileReader< InputImageType  >  ReaderType;
-  typedef itk::ImageFileWriter< OutputImageType >  WriterType;
+  using ReaderType = itk::ImageFileReader<InputImageType>;
+  using WriterType = itk::ImageFileWriter<OutputImageType>;
 
-  ReaderType::Pointer reader = ReaderType::New();
-  WriterType::Pointer writer = WriterType::New();
+  auto reader = ReaderType::New();
+  auto writer = WriterType::New();
 
-  reader->SetFileName( argv[1] );
-  writer->SetFileName( argv[2] );
+  reader->SetFileName(argv[1]);
+  writer->SetFileName(argv[2]);
 
-  const double angleInDegrees = atof( argv[3] );
- 
+  const double angleInDegrees = std::stod(argv[3]);
+
   //  Software Guide : BeginLatex
   //
-  //  The Resampling filter is instantiated and created just like in previous examples.
-  //  The Transform is instantiated and connected to the resampling filter.
+  //  The Resampling filter is instantiated and created just like in previous
+  //  examples. The Transform is instantiated and connected to the resampling
+  //  filter.
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  typedef itk::ResampleImageFilter<
-                  InputImageType, OutputImageType >  FilterType;
+  using FilterType =
+    itk::ResampleImageFilter<InputImageType, OutputImageType>;
 
-  FilterType::Pointer filter = FilterType::New();
+  auto filter = FilterType::New();
 
-  typedef itk::AffineTransform< double, Dimension >  TransformType;
+  using TransformType = itk::AffineTransform<double, Dimension>;
 
-  TransformType::Pointer transform = TransformType::New();
+  auto transform = TransformType::New();
 
-  filter->SetTransform( transform );
+  filter->SetTransform(transform);
   // Software Guide : EndCodeSnippet
- 
+
   //  Software Guide : BeginLatex
   //
   //  The salient feature of this example is the use of the
   //  \doxygen{BSplineInterpolateImageFunction}, which uses cubic BSplines in
   //  order to interpolate the resampled image.
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  typedef itk::BSplineInterpolateImageFunction< 
-                       InputImageType, double >  InterpolatorType;
-  InterpolatorType::Pointer interpolator = InterpolatorType::New();
- 
-  filter->SetInterpolator( interpolator );
+  using InterpolatorType =
+    itk::BSplineInterpolateImageFunction<InputImageType, double>;
+  auto interpolator = InterpolatorType::New();
 
-  filter->SetDefaultPixelValue( 100 );
+  filter->SetInterpolator(interpolator);
+
+  filter->SetDefaultPixelValue(100);
   // Software Guide : EndCodeSnippet
 
 
@@ -122,27 +118,26 @@ int main( int argc, char * argv[] )
   //
   //  The parameters of the output image are taken from the input image.
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
   reader->Update();
-  const InputImageType::SpacingType&
-    spacing = reader->GetOutput()->GetSpacing();
-  const InputImageType::PointType&
-    origin  = reader->GetOutput()->GetOrigin();
-  const InputImageType::DirectionType&
-    direction  = reader->GetOutput()->GetDirection();
-  InputImageType::SizeType size = 
-      reader->GetOutput()->GetLargestPossibleRegion().GetSize();
-  filter->SetOutputOrigin( origin );
-  filter->SetOutputSpacing( spacing );
-  filter->SetOutputDirection( direction );
-  filter->SetSize( size );
+  const InputImageType::SpacingType & spacing =
+    reader->GetOutput()->GetSpacing();
+  const InputImageType::PointType & origin = reader->GetOutput()->GetOrigin();
+  const InputImageType::DirectionType & direction =
+    reader->GetOutput()->GetDirection();
+  InputImageType::SizeType size =
+    reader->GetOutput()->GetLargestPossibleRegion().GetSize();
+  filter->SetOutputOrigin(origin);
+  filter->SetOutputSpacing(spacing);
+  filter->SetOutputDirection(direction);
+  filter->SetSize(size);
   // Software Guide : EndCodeSnippet
 
 
-  filter->SetInput( reader->GetOutput() );
-  writer->SetInput( filter->GetOutput() );
+  filter->SetInput(reader->GetOutput());
+  writer->SetInput(filter->GetOutput());
 
 
   TransformType::OutputVectorType translation1;
@@ -150,46 +145,45 @@ int main( int argc, char * argv[] )
   const double imageCenterX = origin[0] + spacing[0] * size[0] / 2.0;
   const double imageCenterY = origin[1] + spacing[1] * size[1] / 2.0;
 
-  translation1[0] =   -imageCenterX;
-  translation1[1] =   -imageCenterY;
-  
-  transform->Translate( translation1 );
+  translation1[0] = -imageCenterX;
+  translation1[1] = -imageCenterY;
+
+  transform->Translate(translation1);
 
 
   std::cout << "imageCenterX = " << imageCenterX << std::endl;
   std::cout << "imageCenterY = " << imageCenterY << std::endl;
 
 
-  const double degreesToRadians = vcl_atan(1.0) / 45.0;
+  const double degreesToRadians = std::atan(1.0) / 45.0;
   const double angle = angleInDegrees * degreesToRadians;
-  transform->Rotate2D( -angle, false );
+  transform->Rotate2D(-angle, false);
 
 
   TransformType::OutputVectorType translation2;
-  translation2[0] =   imageCenterX;
-  translation2[1] =   imageCenterY;
-  transform->Translate( translation2, false );
- 
+  translation2[0] = imageCenterX;
+  translation2[1] = imageCenterY;
+  transform->Translate(translation2, false);
+
 
   //  Software Guide : BeginLatex
   //
   //  The output of the resampling filter is connected to a writer and the
   //  execution of the pipeline is triggered by a writer update.
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  try 
-    {
+  try
+  {
     writer->Update();
-    }
-  catch( itk::ExceptionObject & excep )
-    {
-    std::cerr << "Exception catched !" << std::endl;
+  }
+  catch (const itk::ExceptionObject & excep)
+  {
+    std::cerr << "Exception caught !" << std::endl;
     std::cerr << excep << std::endl;
-    }
+  }
   // Software Guide : EndCodeSnippet
 
   return EXIT_SUCCESS;
 }
-
