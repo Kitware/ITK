@@ -1,35 +1,28 @@
 /*=========================================================================
-
-  Program:   Insight Segmentation & Registration Toolkit
-  Module:    ConfidenceConnected3D.cxx
-  Language:  C++
-  Date:      $Date$
-  Version:   $Revision$
-
-  Copyright (c) Insight Software Consortium. All rights reserved.
-  See ITKCopyright.txt or http://www.itk.org/HTML/Copyright.htm for details.
-
-     This software is distributed WITHOUT ANY WARRANTY; without even 
-     the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR 
-     PURPOSE.  See the above copyright notices for more information.
-
-=========================================================================*/
-#if defined(_MSC_VER)
-#pragma warning ( disable : 4786 )
-#endif
-
-#ifdef __BORLANDC__
-#define ITK_LEAN_AND_MEAN
-#endif
+ *
+ *  Copyright NumFOCUS
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *         https://www.apache.org/licenses/LICENSE-2.0.txt
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *
+ *=========================================================================*/
 
 //  Software Guide : BeginCommandLineArgs
-//  INPUTS: {brainweb165a10f17.mha}
-//  OUTPUTS: {WhiteMatterSegmentation.mhd}
+//  INPUTS:  {brainweb165a10f17.mha}
+//  ARGUMENTS: {WhiteMatterSegmentation.mhd}
 //  Software Guide : EndCommandLineArgs
 
 
 #include "itkConfidenceConnectedImageFilter.h"
-#include "itkImage.h"
 #include "itkCastImageFilter.h"
 #include "itkCurvatureFlowImageFilter.h"
 #include "itkImageFileReader.h"
@@ -41,102 +34,94 @@
 // In this particular case, we are extracting the white matter from an input
 // Brain MRI dataset.
 //
-// Software Guide : EndLatex 
+// Software Guide : EndLatex
 
 
-int main( int argc, char *argv[] )
+int
+main(int argc, char * argv[])
 {
-  if( argc < 3 )
-    {
+  if (argc < 3)
+  {
     std::cerr << "Missing Parameters " << std::endl;
     std::cerr << "Usage: " << argv[0];
     std::cerr << " inputImage  outputImage " << std::endl;
-    return 1;
-    }
+    return EXIT_FAILURE;
+  }
 
 
-  typedef   float           InternalPixelType;
-  const     unsigned int    Dimension = 3;
-  typedef itk::Image< InternalPixelType, Dimension >  InternalImageType;
+  using InternalPixelType = float;
+  constexpr unsigned int Dimension = 3;
+  using InternalImageType = itk::Image<InternalPixelType, Dimension>;
 
-  typedef unsigned char                            OutputPixelType;
-  typedef itk::Image< OutputPixelType, Dimension > OutputImageType;
+  using OutputPixelType = unsigned char;
+  using OutputImageType = itk::Image<OutputPixelType, Dimension>;
 
-  typedef itk::CastImageFilter< InternalImageType, OutputImageType >
-    CastingFilterType;
-  CastingFilterType::Pointer caster = CastingFilterType::New();
-                        
+  using CastingFilterType =
+    itk::CastImageFilter<InternalImageType, OutputImageType>;
+  auto caster = CastingFilterType::New();
 
-  typedef  itk::ImageFileReader< InternalImageType > ReaderType;
-  typedef  itk::ImageFileWriter<  OutputImageType  > WriterType;
+  const auto input = itk::ReadImage<InternalImageType>(argv[1]);
 
-  ReaderType::Pointer reader = ReaderType::New();
-  WriterType::Pointer writer = WriterType::New();
+  using CurvatureFlowImageFilterType =
+    itk::CurvatureFlowImageFilter<InternalImageType, InternalImageType>;
+  auto smoothing = CurvatureFlowImageFilterType::New();
 
-  reader->SetFileName( argv[1] );
-  writer->SetFileName( argv[2] );
+  using ConnectedFilterType =
+    itk::ConfidenceConnectedImageFilter<InternalImageType, InternalImageType>;
+  auto confidenceConnected = ConnectedFilterType::New();
 
-  typedef itk::CurvatureFlowImageFilter< InternalImageType, InternalImageType >
-    CurvatureFlowImageFilterType;
-  CurvatureFlowImageFilterType::Pointer smoothing = 
-                         CurvatureFlowImageFilterType::New();
+  smoothing->SetInput(input);
+  confidenceConnected->SetInput(smoothing->GetOutput());
+  caster->SetInput(confidenceConnected->GetOutput());
 
-  typedef itk::ConfidenceConnectedImageFilter<InternalImageType, InternalImageType> 
-    ConnectedFilterType;
-  ConnectedFilterType::Pointer confidenceConnected = ConnectedFilterType::New();
+  smoothing->SetNumberOfIterations(2);
+  smoothing->SetTimeStep(0.05);
 
-  smoothing->SetInput( reader->GetOutput() );
-  confidenceConnected->SetInput( smoothing->GetOutput() );
-  caster->SetInput( confidenceConnected->GetOutput() );
-  writer->SetInput( caster->GetOutput() );
+  confidenceConnected->SetMultiplier(2.5);
+  confidenceConnected->SetNumberOfIterations(5);
+  confidenceConnected->SetInitialNeighborhoodRadius(2);
+  confidenceConnected->SetReplaceValue(255);
 
-  smoothing->SetNumberOfIterations( 2 );
-  smoothing->SetTimeStep( 0.05 );
-
-  confidenceConnected->SetMultiplier( 2.5 );
-  confidenceConnected->SetNumberOfIterations( 5 );
-  confidenceConnected->SetInitialNeighborhoodRadius( 2 );
-  confidenceConnected->SetReplaceValue( 255 );
-  
   InternalImageType::IndexType index1;
-  index1[0] = 118; 
+  index1[0] = 118;
   index1[1] = 133;
   index1[2] = 92;
-  confidenceConnected->AddSeed( index1 );
+  confidenceConnected->AddSeed(index1);
 
   InternalImageType::IndexType index2;
   index2[0] = 63;
   index2[1] = 135;
   index2[2] = 94;
-  confidenceConnected->AddSeed( index2 );
- 
+  confidenceConnected->AddSeed(index2);
+
   InternalImageType::IndexType index3;
   index3[0] = 63;
   index3[1] = 157;
   index3[2] = 90;
-  confidenceConnected->AddSeed( index3 );
- 
+  confidenceConnected->AddSeed(index3);
+
   InternalImageType::IndexType index4;
   index4[0] = 111;
   index4[1] = 150;
   index4[2] = 90;
-  confidenceConnected->AddSeed( index4 );
- 
+  confidenceConnected->AddSeed(index4);
+
   InternalImageType::IndexType index5;
   index5[0] = 111;
   index5[1] = 50;
   index5[2] = 88;
-  confidenceConnected->AddSeed( index5 );
+  confidenceConnected->AddSeed(index5);
 
   try
-    {
-    writer->Update();
-    }
-  catch( itk::ExceptionObject & excep )
-    {
+  {
+    itk::WriteImage(caster->GetOutput(), argv[2]);
+  }
+  catch (const itk::ExceptionObject & excep)
+  {
     std::cerr << "Exception caught !" << std::endl;
     std::cerr << excep << std::endl;
-    }
+    return EXIT_FAILURE;
+  }
 
 
   return EXIT_SUCCESS;
