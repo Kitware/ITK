@@ -1,17 +1,8 @@
-PROJECT(PathExamples)
-INCLUDE_REGULAR_EXPRESSION("^.*$")
+project(PathExamples)
 
-IF(NOT BORLAND)
+add_executable(PolyLineParametricPath1 PolyLineParametricPath1.cxx)
+target_link_libraries(PolyLineParametricPath1 ${ITK_LIBRARIES})
 
-ADD_EXECUTABLE(PolyLineParametricPath1 PolyLineParametricPath1.cxx )
-TARGET_LINK_LIBRARIES(PolyLineParametricPath1 ITKIO)
-
-IF(BUILD_TESTING)
-
-ADD_TEST(PolyLineParametricPath1 ${CXX_TEST_PATH}/PolyLineParametricPath1
-    ${ITK_SOURCE_DIR}/Examples/Data/VisibleWomanEyeSlice.png
-)
-
-ENDIF(BUILD_TESTING)
-
-ENDIF(NOT BORLAND)
+if(BUILD_TESTING)
+  add_subdirectory(test)
+endif()
