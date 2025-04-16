@@ -1,26 +1,20 @@
 /*=========================================================================
-
-  Program:   Insight Segmentation & Registration Toolkit
-  Module:    TransformReadWrite.cxx
-  Language:  C++
-  Date:      $Date$
-  Version:   $Revision$
-
-  Copyright (c) Insight Software Consortium. All rights reserved.
-  See ITKCopyright.txt or http://www.itk.org/HTML/Copyright.htm for details.
-
-     This software is distributed WITHOUT ANY WARRANTY; without even 
-     the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR 
-     PURPOSE.  See the above copyright notices for more information.
-
-=========================================================================*/
-#if defined(_MSC_VER)
-#pragma warning ( disable : 4786 )
-#endif
-
-#ifdef __BORLANDC__
-#define ITK_LEAN_AND_MEAN
-#endif
+ *
+ *  Copyright NumFOCUS
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *         https://www.apache.org/licenses/LICENSE-2.0.txt
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *
+ *=========================================================================*/
 
 // Software Guide : BeginLatex
 //
@@ -28,175 +22,191 @@
 // \index{itk::TransformWriter}
 //
 // This example shows how to read and write a transform
-// using the \doxygen{TransformFileReader} and 
+// using the \doxygen{TransformFileReader} and
 // \doxygen{TransformFileWriter}.
 // Let's first include the two appropriate header files.
 //
-// Software Guide : EndLatex 
+// Software Guide : EndLatex
 // Software Guide : BeginCodeSnippet
 #include "itkTransformFileReader.h"
 #include "itkTransformFileWriter.h"
 // Software Guide : EndCodeSnippet
 
 #include "itkAffineTransform.h"
-#include "itkBSplineDeformableTransform.h"
+#include "itkBSplineTransform.h"
+#include "itkCompositeTransform.h"
 #include "itkTransformFactory.h"
-#include "itkTransformFileWriter.h"
 
-int main(int itkNotUsed(ac), char* itkNotUsed(av)[])
+int
+main(int argc, char * argv[])
 {
-  typedef itk::AffineTransform<double,3> AffineTransformType;
-  AffineTransformType::Pointer affine = AffineTransformType::New();
-  AffineTransformType::InputPointType cor;
-  cor.Fill(12);
-  affine->SetCenter(cor);
-  
-  typedef itk::BSplineDeformableTransform<double,3,5> BSplineTransformType;
-  BSplineTransformType::Pointer bspline = BSplineTransformType::New();
-  BSplineTransformType::RegionType region;
+  if (argc < 2)
+  {
+    std::cerr << "Usage: " << argv[0] << " transformFile" << std::endl;
+    return EXIT_FAILURE;
+  }
+  const char * transformFileName = argv[1];
 
-  BSplineTransformType::SizeType size;
-  size.Fill(10);
-  region.SetSize(size);
-  bspline->SetGridRegion( region );
-  BSplineTransformType::OriginType origin;
-  origin.Fill ( 100 );
-  bspline->SetGridOrigin ( origin );
-  BSplineTransformType::SpacingType spacing;
-  spacing.Fill ( 1.5 );
-  bspline->SetGridSpacing ( spacing );
-  
-  BSplineTransformType::ParametersType parameters( bspline->GetNumberOfParameters() );
-  bspline->SetParameters( parameters );
+  using ScalarType = double;
+  constexpr unsigned int Dimension = 3;
+
+  using CompositeTransformType =
+    itk::CompositeTransform<ScalarType, Dimension>;
+  auto composite = CompositeTransformType::New();
+
+  using AffineTransformType = itk::AffineTransform<ScalarType, Dimension>;
+  auto affine = AffineTransformType::New();
+  auto cor = itk::MakeFilled<AffineTransformType::InputPointType>(12);
+  affine->SetCenter(cor);
+
+  composite->AddTransform(affine);
+
+  constexpr unsigned int SplineOrder = 5;
+  using BSplineTransformType =
+    itk::BSplineTransform<ScalarType, Dimension, SplineOrder>;
+  using BSplineTransformFType =
+    itk::BSplineTransform<float, Dimension, SplineOrder>;
+
+  // By default only BSpline transforms of order 3 are registered.
+  // Manually register this order 5 bspline for both float and double
+  // scalar types, so that we can read the correct order transform.
+  itk::TransformFactory<BSplineTransformType>::RegisterTransform();
+  itk::TransformFactory<BSplineTransformFType>::RegisterTransform();
+
+  auto bspline = BSplineTransformType::New();
+
+  auto origin = itk::MakeFilled<BSplineTransformType::OriginType>(100);
+  auto dimensions =
+    itk::MakeFilled<BSplineTransformType::PhysicalDimensionsType>(1.5 * 9.0);
+
+  bspline->SetTransformDomainOrigin(origin);
+  bspline->SetTransformDomainPhysicalDimensions(dimensions);
+
+  const BSplineTransformType::ParametersType parameters(
+    bspline->GetNumberOfParameters());
+  bspline->SetParameters(parameters);
   bspline->SetIdentity();
 
+  composite->AddTransform(bspline);
+
   // Software Guide : BeginLatex
   //
-  // The transform reader and writer are not templated. The conversion is
-  // done internally.when writing or reading the file. We create a writer
+  // The transform reader and writer is templated. The conversion is precision
+  // done if necessary when writing or reading the file. We create a writer
   // using smart pointers.
   //
-  // Software Guide : EndLatex 
+  // Software Guide : EndLatex
   // Software Guide : BeginCodeSnippet
-  itk::TransformFileWriter::Pointer writer;
-  writer = itk::TransformFileWriter::New();
+  using TransformWriterType = itk::TransformFileWriterTemplate<ScalarType>;
+  auto writer = TransformWriterType::New();
   // Software Guide : EndCodeSnippet
 
   // Software Guide : BeginLatex
   //
-  // The first transform we have to write should be set using the
+  // We add a CompositeTransform with the
   // SetInput() function. This function takes any \doxygen{Transform}
   //
-  // Software Guide : EndLatex 
+  // Software Guide : EndLatex
   // Software Guide : BeginCodeSnippet
-  writer->SetInput( affine );
+  writer->SetInput(composite);
   // Software Guide : EndCodeSnippet
 
   // Software Guide : BeginLatex
   //
-  // Moreover, additional transforms to be written can be set using the 
-  // AddTransform() function. This function add the transform to the list.
-  // Note that the SetInput() function reinitializes the list.
+  // Then we set the filename using the SetFileName() function.
+  // Then we call the Update()function to write the transform(s)
+  // onto the disk.
   //
-  // Software Guide : EndLatex 
+  // Software Guide : EndLatex
   // Software Guide : BeginCodeSnippet
-  writer->AddTransform(bspline);
-  // Software Guide : EndCodeSnippet
-
-  // Software Guide : BeginLatex
-  //
-  // Then we set the filename using the SetFileName() function. The file's extension
-  // does not matter for the transform reader/writer. Then we call the Update()
-  // function to write the transform(s) onto the disk.
-  //
-  // Software Guide : EndLatex 
-  // Software Guide : BeginCodeSnippet
-  writer->SetFileName( "Transforms.meta" );
+  writer->SetFileName(transformFileName);
   // Software Guide : EndCodeSnippet
   try
-    {
+  {
     // Software Guide : BeginCodeSnippet
     writer->Update();
     // Software Guide : EndCodeSnippet
-    }
-  catch( itk::ExceptionObject & excp )
-    {
+  }
+  catch (const itk::ExceptionObject & excp)
+  {
     std::cerr << "Error while saving the transforms" << std::endl;
     std::cerr << excp << std::endl;
-    return 0;
-    }
-  
+    return EXIT_FAILURE;
+  }
+
   // Software Guide : BeginLatex
-  // In order to read a transform file, we instantiate a TransformFileReader. 
-  // Like the writer, the reader is not templated.
-  // Software Guide : EndLatex 
+  //
+  // In order to read a transform file, we instantiate a TransformFileReader.
+  // Like the writer, the reader is templated.
+  //
+  // Software Guide : EndLatex
+
   // Software Guide : BeginCodeSnippet
-  itk::TransformFileReader::Pointer reader;
-  reader = itk::TransformFileReader::New();
+  using ReadScalarType = float;
+
+  using TransformReaderType =
+    itk::TransformFileReaderTemplate<ReadScalarType>;
+  auto reader = TransformReaderType::New();
   // Software Guide : EndCodeSnippet
 
   // Software Guide : BeginLatex
-  // Some transforms (like the BSpline transform) might not be registered 
-  // with the factory so we add them manually. 
-  // Software Guide : EndLatex 
-  // Software Guide : BeginCodeSnippet
-  itk::TransformFactory<BSplineTransformType>::RegisterTransform();
-  // Software Guide : EndCodeSnippet
-
-  // Software Guide : BeginLatex
+  //
   // We then set the name of the file we want to read, and call the
   // Update() function.
-  // Software Guide : EndLatex 
+  //
+  // Software Guide : EndLatex
+
   // Software Guide : BeginCodeSnippet
-  reader->SetFileName( "Transforms.meta" );
+  reader->SetFileName(transformFileName);
   // Software Guide : EndCodeSnippet
-  
+
   try
-    {
-  // Software Guide : BeginCodeSnippet
+  {
+    // Software Guide : BeginCodeSnippet
     reader->Update();
-  // Software Guide : EndCodeSnippet
-    }
-  catch( itk::ExceptionObject & excp )
-    {
+    // Software Guide : EndCodeSnippet
+  }
+  catch (const itk::ExceptionObject & excp)
+  {
     std::cerr << "Error while reading the transform file" << std::endl;
     std::cerr << excp << std::endl;
     std::cerr << "[FAILED]" << std::endl;
     return EXIT_FAILURE;
-    }
+  }
 
   // Software Guide : BeginLatex
-  // The transform reader is not template and therefore it retunrs a list
-  // of \doxygen{Transform}. However, the reader instantiate the appropriate
-  // transform class when reading the file but it is up to the user to
-  // do the approriate cast.
-  // To get the output list of transform we use the GetTransformList() function.
-  // Software Guide : EndLatex 
+  //
+  // The transform reader is templated and it returns a list
+  // of \doxygen{Transform}'s. Even thought the reader instantiate the
+  // appropriate transform class when reading the file, it is up to the user
+  // to do the appropriate cast. To get the output list of transform we use
+  // the GetTransformList() function.
+  //
+  // Software Guide : EndLatex
+
   // Software Guide : BeginCodeSnippet
-  typedef itk::TransformFileReader::TransformListType * TransformListType;
-  TransformListType transforms = reader->GetTransformList();
+  const TransformReaderType::TransformListType * transforms =
+    reader->GetTransformList();
   std::cout << "Number of transforms = " << transforms->size() << std::endl;
   // Software Guide : EndCodeSnippet
 
   // Software Guide : BeginLatex
-  // We then use an STL iterator to go trought the list of transforms. We show here
-  // how to do the proper casting of the resulting transform.
-  // Software Guide : EndLatex 
+  //
+  // We then use an STL iterator to go through the list of transforms. We show
+  // here how to do the proper casting of the resulting transform.
+  //
+  // Software Guide : EndLatex
+
   // Software Guide : BeginCodeSnippet
-  itk::TransformFileReader::TransformListType::const_iterator it = transforms->begin();
-  if(!strcmp((*it)->GetNameOfClass(),"AffineTransform"))
-    {
-    AffineTransformType::Pointer affine_read = static_cast<AffineTransformType*>((*it).GetPointer());
-    affine_read->Print(std::cout);
-    }
-
-  it++;
-
-  if(!strcmp((*it)->GetNameOfClass(),"BSplineDeformableTransform"))
-    {
-    BSplineTransformType::Pointer bspline_read = static_cast<BSplineTransformType*>((*it).GetPointer());
-    bspline_read->Print(std::cout);
-    }
+  using ReadCompositeTransformType =
+    itk::CompositeTransform<ReadScalarType, Dimension>;
+  auto it = transforms->begin();
+  if (!strcmp((*it)->GetNameOfClass(), "CompositeTransform"))
+  {
+    const ReadCompositeTransformType::Pointer compositeRead =
+      static_cast<ReadCompositeTransformType *>((*it).GetPointer());
+    compositeRead->Print(std::cout);
+  }
   //  Software Guide : EndCodeSnippet
 
   return EXIT_SUCCESS;

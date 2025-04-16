@@ -1,22 +1,20 @@
 /*=========================================================================
-
-  Program:   Insight Segmentation & Registration Toolkit
-  Module:    ImageHistogram1.cxx
-  Language:  C++
-  Date:      $Date$
-  Version:   $Revision$
-
-  Copyright (c) Insight Software Consortium. All rights reserved.
-  See ITKCopyright.txt or http://www.itk.org/HTML/Copyright.htm for details.
-
-     This software is distributed WITHOUT ANY WARRANTY; without even 
-     the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR 
-     PURPOSE.  See the above copyright notices for more information.
-
-=========================================================================*/
-#if defined(_MSC_VER)
-#pragma warning ( disable : 4786 )
-#endif
+ *
+ *  Copyright NumFOCUS
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *         https://www.apache.org/licenses/LICENSE-2.0.txt
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *
+ *=========================================================================*/
 
 // Software Guide : BeginLatex
 //
@@ -24,236 +22,212 @@
 // the statistics framework classes operate on Samples and
 // ListOfSamples, we need to introduce a class that will make the image look
 // like a list of samples. This class is the
-// \subdoxygen{Statistics}{ScalarImageToListAdaptor}.  Once we have connected
+// \subdoxygen{Statistics}{ImageToListSampleAdaptor}.  Once we have connected
 // this adaptor to an image, we can proceed to use the
-// \subdoxygen{Statistics}{ListSampleToHistogramGenerator} in order to compute
+// \subdoxygen{Statistics}{SampleToHistogramFilter} in order to compute
 // the histogram of the image.
 //
 // First, we need to include the headers for the
-// \subdoxygen{Statistics}{ScalarImageToListAdaptor} and the \doxygen{Image} classes.
+// \subdoxygen{Statistics}{ImageToListSampleAdaptor} and the \doxygen{Image}
+// classes.
 //
 // \index{itk::Statistics::Scalar\-Image\-To\-List\-Adaptor!header}
 // \index{Statistics!Images}
 //
-// Software Guide : EndLatex 
+// Software Guide : EndLatex
 
 // Software Guide : BeginCodeSnippet
-#include "itkScalarImageToListAdaptor.h"
+#include "itkImageToListSampleAdaptor.h"
 #include "itkImage.h"
 // Software Guide : EndCodeSnippet
 
 // Software Guide : BeginLatex
 //
-// Now we include the headers for the \code{ListSampleToHistogramGenerator} and
-// the reader that we will use for reading the image from a file.
+// Now we include the headers for the \code{Histogram}, the
+// \code{SampleToHistogramFilter}, and the reader that we will use for
+// reading the image from a file.
 //
 // \index{itk::Statistics::List\-Sample\-To\-Histogram\-Generator!header}
 //
-// Software Guide : EndLatex 
+// Software Guide : EndLatex
 
 // Software Guide : BeginCodeSnippet
 #include "itkImageFileReader.h"
-#include "itkListSampleToHistogramGenerator.h"
+#include "itkHistogram.h"
+#include "itkSampleToHistogramFilter.h"
 // Software Guide : EndCodeSnippet
-
-int main( int argc, char * argv [] )
+namespace
+{
+int
+ExampleMain(int argc, const char * const argv[])
 {
 
-  if( argc < 2 )
-    {
+  if (argc < 2)
+  {
     std::cerr << "Missing command line arguments" << std::endl;
     std::cerr << "Usage :  ImageHistogram1  inputImageFileName " << std::endl;
-    return -1;
-    }
+    return EXIT_FAILURE;
+  }
 
+  // Software Guide : BeginLatex
+  //
+  // The image type must be defined using the typical pair of pixel type and
+  // dimension specification.
+  //
+  // Software Guide : EndLatex
 
+  // Software Guide : BeginCodeSnippet
+  using PixelType = unsigned char;
+  constexpr unsigned int Dimension = 2;
 
-// Software Guide : BeginLatex
-//
-// The image type must be defined using the typical pair of pixel type and
-// dimension specification.
-//
-// Software Guide : EndLatex 
+  using ImageType = itk::Image<PixelType, Dimension>;
+  // Software Guide : EndCodeSnippet
 
+  // Software Guide : BeginLatex
+  //
+  // Using the same image type we read the image file
+  // that will provide the image source for our example.
+  // As usual, this must be done inside a try/catch block because the read
+  // operation can potentially throw exceptions.
+  //
+  // Software Guide : EndLatex
 
-// Software Guide : BeginCodeSnippet
-  typedef unsigned char       PixelType;
-  const unsigned int          Dimension = 2;
+  // Software Guide : BeginCodeSnippet
+  ImageType::Pointer input;
 
-  typedef itk::Image<PixelType, Dimension > ImageType;
-// Software Guide : EndCodeSnippet
+  input = itk::ReadImage<ImageType>(argv[1]);
 
+  // Software Guide : EndCodeSnippet
 
+  // Software Guide : BeginLatex
+  //
+  // Now we introduce the central piece of this example, which is the use of
+  // the adaptor that will present the \doxygen{Image} as if it was a list of
+  // samples. We instantiate the type of the adaptor by using the actual image
+  // type. Then construct the adaptor by invoking its \code{New()} method and
+  // assigning the result to the corresponding smart pointer. Finally we
+  // specify the input to the adaptor.
+  //
+  // \index{itk::Statistics::Scalar\-Image\-To\-List\-Adaptor!instantiation}
+  //
+  // Software Guide : EndLatex
 
-// Software Guide : BeginLatex
-//
-// Using the same image type we instantiate the type of the image reader that
-// will provide the image source for our example.
-//
-// Software Guide : EndLatex 
+  // Software Guide : BeginCodeSnippet
+  using AdaptorType = itk::Statistics::ImageToListSampleAdaptor<ImageType>;
 
+  auto adaptor = AdaptorType::New();
 
-// Software Guide : BeginCodeSnippet
-  typedef itk::ImageFileReader< ImageType > ReaderType;
+  adaptor->SetImage(input);
+  // Software Guide : EndCodeSnippet
 
-  ReaderType::Pointer reader = ReaderType::New();
+  // Software Guide : BeginLatex
+  //
+  // At this point, we are ready for instantiating the type of the histogram
+  // filter. We must first declare the type of histogram we wish to use.
+  // The adaptor type is also used as template parameter of the filter.
+  // Having instantiated this type, we proceed to create one filter
+  // by invoking its \code{New()} method.
+  //
+  // \index{itk::Statistics::Sample\-To\-Histogram\-Filter!instantiation}
+  //
+  // Software Guide : EndLatex
 
-  reader->SetFileName( argv[1] );
-// Software Guide : EndCodeSnippet
+  // Software Guide : BeginCodeSnippet
+  using HistogramMeasurementType = PixelType;
+  using HistogramType = itk::Statistics::Histogram<HistogramMeasurementType>;
+  using FilterType =
+    itk::Statistics::SampleToHistogramFilter<AdaptorType, HistogramType>;
 
+  auto filter = FilterType::New();
+  // Software Guide : EndCodeSnippet
 
-// Software Guide : BeginLatex
-//
-// Now we introduce the central piece of this example, which is the use of the
-// adaptor that will present the \doxygen{Image} as if it was a list of
-// samples. We instantiate the type of the adaptor by using the actual image
-// type. Then construct the adaptor by invoking its \code{New()} method and
-// assigning the result to the corresponding smart pointer. Finally we connect
-// the output of the image reader to the input of the adaptor. 
-//
-// \index{itk::Statistics::Scalar\-Image\-To\-List\-Adaptor!instantiation}
-//
-// Software Guide : EndLatex 
+  // Software Guide : BeginLatex
+  //
+  // We define now the characteristics of the Histogram that we want to
+  // compute. This typically includes the size of each one of the component,
+  // but given that in this simple example we are dealing with a scalar image,
+  // then our histogram will have a single component. For the sake of
+  // generality, however, we use the \code{HistogramType} as defined inside of
+  // the Generator type. We define also the marginal scale factor that will
+  // control the precision used when assigning values to histogram bins.
+  // Finally we invoke the \code{Update()} method in the filter.
+  //
+  // Software Guide : EndLatex
 
+  // Software Guide : BeginCodeSnippet
+  constexpr unsigned int  numberOfComponents = 1;
+  HistogramType::SizeType size(numberOfComponents);
+  size.Fill(255);
 
-// Software Guide : BeginCodeSnippet
-  typedef itk::Statistics::ScalarImageToListAdaptor< ImageType >   AdaptorType;
+  filter->SetInput(adaptor);
+  filter->SetHistogramSize(size);
+  filter->SetMarginalScale(10);
 
-  AdaptorType::Pointer adaptor = AdaptorType::New();
+  HistogramType::MeasurementVectorType min(numberOfComponents);
+  HistogramType::MeasurementVectorType max(numberOfComponents);
 
-  adaptor->SetImage(  reader->GetOutput() );
-// Software Guide : EndCodeSnippet
+  min.Fill(0);
+  max.Fill(255);
 
+  filter->SetHistogramBinMinimum(min);
+  filter->SetHistogramBinMaximum(max);
 
+  filter->Update();
+  // Software Guide : EndCodeSnippet
 
+  // Software Guide : BeginLatex
+  //
+  // Now we are ready for using the image histogram for any further
+  // processing. The histogram is obtained from the filter by invoking the
+  // \code{GetOutput()} method.
+  //
+  // Software Guide : EndLatex
 
-// Software Guide : BeginLatex
-//
-// You must keep in mind that adaptors are not pipeline objects. This means
-// that they do not propagate update calls. It is therefore your responsibility
-// to make sure that you invoke the \code{Update()} method of the reader before
-// you attempt to use the output of the adaptor. As usual, this must be done
-// inside a try/catch block because the read operation can potentially throw
-// exceptions.
-//
-// Software Guide : EndLatex 
+  // Software Guide : BeginCodeSnippet
+  const HistogramType::ConstPointer histogram = filter->GetOutput();
+  // Software Guide : EndCodeSnippet
 
-// Software Guide : BeginCodeSnippet
-  try
-    {
-    reader->Update();
-    }
-  catch( itk::ExceptionObject & excp )
-    {
-    std::cerr << "Problem reading image file : " << argv[1] << std::endl;
-    std::cerr << excp << std::endl;
-    return -1;
-    }
-// Software Guide : EndCodeSnippet
+  // Software Guide : BeginLatex
+  //
+  // In this current example we simply print out the frequency values of all
+  // the bins in the image histogram.
+  //
+  // Software Guide : EndLatex
 
-
-
-// Software Guide : BeginLatex
-//
-// At this point, we are ready for instantiating the type of the histogram
-// generator. Note that the adaptor type is used as template parameter of the
-// generator. Having instantiated this type, we proceed to create one generator
-// by invoking its \code{New()} method.
-//
-// \index{itk::Statistics::List\-Sample\-To\-Histogram\-Generator!instantiation}
-//
-// Software Guide : EndLatex 
-
-
-// Software Guide : BeginCodeSnippet
-  typedef PixelType        HistogramMeasurementType;
-
-  typedef itk::Statistics::ListSampleToHistogramGenerator< 
-                                                AdaptorType, 
-                                                HistogramMeasurementType 
-                                                                > GeneratorType;
-
-  GeneratorType::Pointer generator = GeneratorType::New();
-// Software Guide : EndCodeSnippet
-
-
-
-// Software Guide : BeginLatex
-//
-// We define now the characteristics of the Histogram that we want to compute.
-// This typically includes the size of each one of the component, but given
-// that in this simple example we are dealing with a scalar image, then our
-// histogram will have a single component. For the sake of generality, however,
-// we use the \code{HistogramType} as defined inside of the Generator type. We
-// define also the marginal scale factor that will control the precision used
-// when assigning values to histogram bins. Finally we invoke the
-// \code{Update()} method in the generator.
-//
-// Software Guide : EndLatex 
-
-
-// Software Guide : BeginCodeSnippet
-  typedef GeneratorType::HistogramType  HistogramType;
-
-  HistogramType::SizeType size;
-  size.Fill( 256 );
-
-  generator->SetListSample( adaptor );
-  generator->SetNumberOfBins( size );
-  generator->SetMarginalScale( 10.0 );
-
-  HistogramType::MeasurementVectorType min;
-  HistogramType::MeasurementVectorType max;
-  
-  min.Fill(   -0.5 );
-  max.Fill(  255.5 );
-  
-  generator->SetHistogramMin( min );
-  generator->SetHistogramMax( max );
-
-  generator->Update();
-// Software Guide : EndCodeSnippet
-
-
-
-
-// Software Guide : BeginLatex
-//
-// Now we are ready for using the image histogram for any further processing.
-// The histogram is obtained from the generator by invoking the
-// \code{GetOutput()} method.
-//
-// Software Guide : EndLatex 
-
-
-// Software Guide : BeginCodeSnippet
-  HistogramType::ConstPointer histogram = generator->GetOutput();
-// Software Guide : EndCodeSnippet
-
-
-
-// Software Guide : BeginLatex
-//
-// In this current example we simply print out the frequency values of all the
-// bins in the image histogram.
-//
-// Software Guide : EndLatex 
-
-
-// Software Guide : BeginCodeSnippet
+  // Software Guide : BeginCodeSnippet
   const unsigned int histogramSize = histogram->Size();
 
   std::cout << "Histogram size " << histogramSize << std::endl;
 
-  for( unsigned int bin=0; bin < histogramSize; bin++ )
-    {
+  for (unsigned int bin = 0; bin < histogramSize; ++bin)
+  {
     std::cout << "bin = " << bin << " frequency = ";
-    std::cout << histogram->GetFrequency( bin, 0 ) <<std::endl;
-    }
-// Software Guide : EndCodeSnippet
+    std::cout << histogram->GetFrequency(bin, 0) << std::endl;
+  }
+  // Software Guide : EndCodeSnippet
 
-  return 0;
-  
+  return EXIT_SUCCESS;
 }
+} // namespace
 
-
+int
+main(int argc, char * argv[])
+{
+  try
+  {
+    return ExampleMain(argc, argv);
+  }
+  catch (const itk::ExceptionObject & exceptionObject)
+  {
+    std::cerr << "ITK exception caught:\n" << exceptionObject << '\n';
+  }
+  catch (const std::exception & stdException)
+  {
+    std::cerr << "std exception caught:\n" << stdException.what() << '\n';
+  }
+  catch (...)
+  {
+    std::cerr << "Unhandled exception!\n";
+  }
+  return EXIT_FAILURE;
+}

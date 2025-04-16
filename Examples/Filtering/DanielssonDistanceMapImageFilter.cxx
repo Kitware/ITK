@@ -1,32 +1,26 @@
 /*=========================================================================
-
-  Program:   Insight Segmentation & Registration Toolkit
-  Module:    DanielssonDistanceMapImageFilter.cxx
-  Language:  C++
-  Date:      $Date$
-  Version:   $Revision$
-
-  Copyright (c) Insight Software Consortium. All rights reserved.
-  See ITKCopyright.txt or http://www.itk.org/HTML/Copyright.htm for details.
-
-     This software is distributed WITHOUT ANY WARRANTY; without even 
-     the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR 
-     PURPOSE.  See the above copyright notices for more information.
-
-=========================================================================*/
-#if defined(_MSC_VER)
-#pragma warning ( disable : 4786 )
-#endif
-
-#ifdef __BORLANDC__
-#define ITK_LEAN_AND_MEAN
-#endif
+ *
+ *  Copyright NumFOCUS
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *         https://www.apache.org/licenses/LICENSE-2.0.txt
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *
+ *=========================================================================*/
 
 //  Software Guide : BeginCommandLineArgs
-//    INPUTS:  {FivePoints.png}
+//    INPUTS:  {FivePointsDilated.png}
 //    OUTPUTS: {DanielssonDistanceMapImageFilterOutput1.png}
 //    OUTPUTS: {DanielssonDistanceMapImageFilterOutput2.png}
-//    OUTPUTS: {DanielssonDistanceMapImageFilterOutput3.mhd}
+//    ARGUMENTS: {DanielssonDistanceMapImageFilterOutput3.mhd}
 //  Software Guide : EndCommandLineArgs
 
 // Software Guide : BeginLatex
@@ -37,16 +31,16 @@
 // Danielsson \cite{Danielsson1980}. As secondary outputs, a Voronoi
 // partition of the input elements is produced, as well as a vector image
 // with the components of the distance vector to the closest point. The input
-// to the map is assumed to be a set of points on the input image. Each
-// point/pixel is considered to be a separate entity even if they share the
-// same gray level value.
+// to the map is assumed to be a set of points on the input image. The label
+// of each group of pixels is assigned by the
+// \doxygen{ConnectedComponentImageFilter}.
 //
 // \index{itk::Danielsson\-Distance\-Map\-Image\-Filter!Instantiation}
 // \index{itk::Danielsson\-Distance\-Map\-Image\-Filter!Header}
 //
-// The first step required to use this filter is to include its header file. 
+// The first step required to use this filter is to include its header file.
 //
-// Software Guide : EndLatex 
+// Software Guide : EndLatex
 
 // Software Guide : BeginCodeSnippet
 #include "itkDanielssonDistanceMapImageFilter.h"
@@ -55,37 +49,42 @@
 #include "itkImage.h"
 #include "itkImageFileReader.h"
 #include "itkImageFileWriter.h"
+#include "itkConnectedComponentImageFilter.h"
 #include "itkRescaleIntensityImageFilter.h"
 
 
-int main( int argc, char * argv[] )
+int
+main(int argc, char * argv[])
 {
-  if( argc < 5 )
-    {
+  if (argc < 5)
+  {
     std::cerr << "Usage: " << argv[0];
     std::cerr << " inputImageFile outputDistanceMapImageFile ";
     std::cerr << " outputVoronoiMapImageFile ";
     std::cerr << " outputVectorMapImageFile ";
-    std::cerr << std::endl;  
+    std::cerr << std::endl;
     return EXIT_FAILURE;
-    }
-  
+  }
+
   //  Software Guide : BeginLatex
   //
   //  Then we must decide what pixel types to use for the input and output
   //  images. Since the output will contain distances measured in pixels, the
   //  pixel type should be able to represent at least the width of the image,
-  //  or said in $N-D$ terms, the maximum extension along all the dimensions.
-  //  The input and output image types are now defined using their respective
-  //  pixel type and dimension.
+  //  or said in $N$-dimensional terms, the maximum extension along all the
+  //  dimensions. The input, output (distance map), and voronoi partition
+  //  image types are now defined using their respective pixel type and
+  //  dimension.
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  typedef  unsigned char                   InputPixelType;
-  typedef  unsigned short                  OutputPixelType;
-  typedef itk::Image< InputPixelType,  2 > InputImageType;
-  typedef itk::Image< OutputPixelType, 2 > OutputImageType;
+  using InputPixelType = unsigned char;
+  using OutputPixelType = unsigned short;
+  using VoronoiPixelType = unsigned char;
+  using InputImageType = itk::Image<InputPixelType, 2>;
+  using OutputImageType = itk::Image<OutputPixelType, 2>;
+  using VoronoiImageType = itk::Image<VoronoiPixelType, 2>;
   // Software Guide : EndCodeSnippet
 
 
@@ -99,74 +98,90 @@ int main( int argc, char * argv[] )
   //  \index{itk::Danielsson\-Distance\-Map\-Image\-Filter!New()}
   //  \index{itk::Danielsson\-Distance\-Map\-Image\-Filter!Pointer}
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
+
+  using LabelerType =
+    itk::ConnectedComponentImageFilter<InputImageType, InputImageType>;
+  auto labeler = LabelerType::New();
 
   // Software Guide : BeginCodeSnippet
-  typedef itk::DanielssonDistanceMapImageFilter<
-               InputImageType, OutputImageType >  FilterType;
-  FilterType::Pointer filter = FilterType::New();
+  using FilterType = itk::DanielssonDistanceMapImageFilter<InputImageType,
+                                                           OutputImageType,
+                                                           VoronoiImageType>;
+  auto filter = FilterType::New();
   // Software Guide : EndCodeSnippet
 
+  using RescalerType =
+    itk::RescaleIntensityImageFilter<OutputImageType, OutputImageType>;
+  auto scaler = RescalerType::New();
 
-  typedef itk::RescaleIntensityImageFilter< 
-                   OutputImageType, OutputImageType > RescalerType;
-  RescalerType::Pointer scaler = RescalerType::New();
+  using VoronoiRescalerType =
+    itk::RescaleIntensityImageFilter<VoronoiImageType, VoronoiImageType>;
+  auto voronoiScaler = VoronoiRescalerType::New();
 
   //
   // Reader and Writer types are instantiated.
   //
-  typedef itk::ImageFileReader< InputImageType  >  ReaderType;
-  typedef itk::ImageFileWriter< OutputImageType >  WriterType;
+  using ReaderType = itk::ImageFileReader<InputImageType>;
+  using WriterType = itk::ImageFileWriter<OutputImageType>;
+  using VoronoiWriterType = itk::ImageFileWriter<VoronoiImageType>;
 
-  ReaderType::Pointer reader = ReaderType::New();
-  WriterType::Pointer writer = WriterType::New();
+  auto reader = ReaderType::New();
+  auto writer = WriterType::New();
+  auto voronoiWriter = VoronoiWriterType::New();
 
-  reader->SetFileName( argv[1] );
-  writer->SetFileName( argv[2] );
+  reader->SetFileName(argv[1]);
+  writer->SetFileName(argv[2]);
+  voronoiWriter->SetFileName(argv[3]);
 
 
   //  Software Guide : BeginLatex
   //
   //  The input to the filter is taken from a reader and its output is passed
-  //  to a \doxygen{RescaleIntensityImageFilter} and then to a writer.
+  //  to a \doxygen{RescaleIntensityImageFilter} and then to a writer. The
+  //  scaler and writer are both templated over the image type, so we
+  //  instantiate a separate pipeline for the voronoi partition map starting
+  //  at the scaler.
   //
   //  \index{itk::Danielsson\-Distance\-Map\-Image\-Filter!SetInput()}
   //  \index{itk::Danielsson\-Distance\-Map\-Image\-Filter!GetOutput()}
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  filter->SetInput( reader->GetOutput() );
-  scaler->SetInput( filter->GetOutput() );
-  writer->SetInput( scaler->GetOutput() );
+  labeler->SetInput(reader->GetOutput());
+  filter->SetInput(labeler->GetOutput());
+  scaler->SetInput(filter->GetOutput());
+  writer->SetInput(scaler->GetOutput());
   // Software Guide : EndCodeSnippet
-
-
-  scaler->SetOutputMaximum( 65535L );
-  scaler->SetOutputMinimum(     0L );
-
 
   //  Software Guide : BeginLatex
   //
-  //  The type of input image has to be specified. In this case, a binary
-  //  image is selected.
+  //  The Voronoi map is obtained with the \code{GetVoronoiMap()} method. In
+  //  the lines below we connect this output to the intensity rescaler.
   //
-  //  \index{itk::Danielsson\-Distance\-MapImage\-Filter!InputIsBinaryOn()}
+  //  \index{itk::Danielsson\-Distance\-Map\-Image\-Filter!GetVoronoiMap()}
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  filter->InputIsBinaryOn();
+  voronoiScaler->SetInput(filter->GetVoronoiMap());
+  voronoiWriter->SetInput(voronoiScaler->GetOutput());
   // Software Guide : EndCodeSnippet
 
 
+  scaler->SetOutputMaximum(65535L);
+  scaler->SetOutputMinimum(0L);
+  voronoiScaler->SetOutputMaximum(255);
+  voronoiScaler->SetOutputMinimum(0);
+
   //  Software Guide : BeginLatex
-  //  
+  //
   // \begin{figure}
   // \center
-  // \includegraphics[width=0.32\textwidth]{FivePoints.eps}
-  // \includegraphics[width=0.32\textwidth]{DanielssonDistanceMapImageFilterOutput1.eps}
-  // \includegraphics[width=0.32\textwidth]{DanielssonDistanceMapImageFilterOutput2.eps}
+  // \includegraphics[width=0.32\textwidth]{FivePointsDilated}
+  // \includegraphics[width=0.32\textwidth]{DanielssonDistanceMapImageFilterOutput1}
+  // \includegraphics[width=0.32\textwidth]{DanielssonDistanceMapImageFilterOutput2}
   // \itkcaption[DanielssonDistanceMapImageFilter
   // output]{DanielssonDistanceMapImageFilter output. Set of pixels, distance
   // map and Voronoi partition.}
@@ -175,107 +190,88 @@ int main( int argc, char * argv[] )
   //
   //  Figure \ref{fig:DanielssonDistanceMapImageFilterInputOutput} illustrates
   //  the effect of this filter on a binary image with a set of points. The
-  //  input image is shown at left, the distance map at the center and the
-  //  Voronoi partition at right. This filter computes distance maps in
-  //  N-dimensions and is therefore capable of producing $N-D$ Voronoi
-  //  partitions.
+  //  input image is shown at the left, and the distance map at the center and
+  //  the Voronoi partition at the right. This filter computes distance maps
+  //  in N-dimensions and is therefore capable of producing $N$-dimensional
+  //  Voronoi partitions.
   //
   //  \index{Voronoi partitions}
   //  \index{Voronoi partitions!itk::Danielsson\-Distance\-Map\-Image\-Filter}
   //
-  //  Software Guide : EndLatex 
-
+  //  Software Guide : EndLatex
 
   writer->Update();
-  const char * voronoiMapFileName = argv[3];
-
+  voronoiWriter->Update();
 
   //  Software Guide : BeginLatex
   //
-  //  The Voronoi map is obtained with the \code{GetVoronoiMap()} method. In
-  //  the lines below we connect this output to the intensity rescaler and
-  //  save the result in a file.
-  //
-  //  \index{itk::Danielsson\-Distance\-Map\-Image\-Filter!GetVoronoiMap()}
-  //
-  //  Software Guide : EndLatex 
-
-  // Software Guide : BeginCodeSnippet
-  scaler->SetInput( filter->GetVoronoiMap() );
-  writer->SetFileName( voronoiMapFileName );
-  writer->Update();
-  // Software Guide : EndCodeSnippet
-
-
-  //  Software Guide : BeginLatex
-  //  
   //  The distance filter also produces an image of \doxygen{Offset} pixels
   //  representing the vectorial distance to the closest object in the scene.
   //  The type of this output image is defined by the VectorImageType
   //  trait of the filter type.
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  typedef FilterType::VectorImageType   OffsetImageType;
+  using OffsetImageType = FilterType::VectorImageType;
   // Software Guide : EndCodeSnippet
 
 
   //  Software Guide : BeginLatex
-  //  
+  //
   //  We can use this type for instantiating an \doxygen{ImageFileWriter} type
   //  and creating an object of this class in the following lines.
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  typedef itk::ImageFileWriter< OffsetImageType >  WriterOffsetType;
-  WriterOffsetType::Pointer offsetWriter = WriterOffsetType::New();
+  using WriterOffsetType = itk::ImageFileWriter<OffsetImageType>;
+  auto offsetWriter = WriterOffsetType::New();
   // Software Guide : EndCodeSnippet
 
 
   //  Software Guide : BeginLatex
-  //  
+  //
   //  The output of the distance filter can be connected as input to the
   //  writer.
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  offsetWriter->SetInput(  filter->GetVectorDistanceMap()  );
+  offsetWriter->SetInput(filter->GetVectorDistanceMap());
   // Software Guide : EndCodeSnippet
 
 
-  offsetWriter->SetFileName( argv[4]  );
+  offsetWriter->SetFileName(argv[4]);
 
 
   //  Software Guide : BeginLatex
-  //  
+  //
   //  Execution of the writer is triggered by the invocation of the
   //  \code{Update()} method. Since this method can potentially throw
   //  exceptions it must be placed in a \code{try/catch} block.
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
   try
-    {
+  {
     offsetWriter->Update();
-    }
-  catch( itk::ExceptionObject exp )
-    {
+  }
+  catch (const itk::ExceptionObject & exp)
+  {
     std::cerr << "Exception caught !" << std::endl;
-    std::cerr <<     exp    << std::endl;
-    }
+    std::cerr << exp << std::endl;
+  }
   // Software Guide : EndCodeSnippet
 
 
   //  Software Guide : BeginLatex
-  //  
+  //
   //  Note that only the \doxygen{MetaImageIO} class supports reading and
   //  writing images of pixel type \doxygen{Offset}.
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   return EXIT_SUCCESS;
 }
