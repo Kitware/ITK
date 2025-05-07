@@ -1,23 +1,21 @@
 /*=========================================================================
+ *
+ *  Copyright NumFOCUS
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *         https://www.apache.org/licenses/LICENSE-2.0.txt
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *
+ *=========================================================================*/
 
-  Program:   Insight Segmentation & Registration Toolkit
-  Module:    NeighborhoodIterators2.cxx
-  Language:  C++
-  Date:      $Date$
-  Version:   $Revision$
-
-  Copyright (c) Insight Software Consortium. All rights reserved.
-  See ITKCopyright.txt or http://www.itk.org/HTML/Copyright.htm for details.
-
-     This software is distributed WITHOUT ANY WARRANTY; without even 
-     the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR 
-     PURPOSE.  See the above copyright notices for more information.
-
-=========================================================================*/
-#if defined(_MSC_VER)
-#pragma warning ( disable : 4786 )
-#endif
-#include "itkImage.h"
 #include "itkImageFileReader.h"
 #include "itkImageFileWriter.h"
 #include "itkRescaleIntensityImageFilter.h"
@@ -27,13 +25,13 @@
 // Software Guide : BeginLatex
 //
 // In this example, the Sobel edge-detection routine is rewritten using
-// convolution filtering.  Convolution filtering is a standard image processing
-// technique that can be implemented numerically as the inner product of all
-// image neighborhoods with a convolution kernel \cite{Gonzalez1993}
-// \cite{Castleman1996}.  In ITK, we use a class of objects called
-// \emph{neighborhood operators} as convolution kernels and a special function
-// object called \doxygen{NeighborhoodInnerProduct} to calculate inner
-// products.
+// convolution filtering.  Convolution filtering is a standard image
+// processing technique that can be implemented numerically as the inner
+// product of all image neighborhoods with a convolution kernel
+// \cite{Gonzalez1993} \cite{Castleman1996}.  In ITK, we use a class of
+// objects called \emph{neighborhood operators} as convolution kernels and a
+// special function object called \doxygen{NeighborhoodInnerProduct} to
+// calculate inner products.
 //
 // The basic ITK convolution filtering routine is to step through the image
 // with a neighborhood iterator and use NeighborhoodInnerProduct to
@@ -56,134 +54,136 @@
 #include "itkNeighborhoodInnerProduct.h"
 // Software Guide : EndCodeSnippet
 
-int main( int argc, char ** argv )
+int
+main(int argc, char ** argv)
 {
-  if ( argc < 4 )
-    {
-      std::cerr << "Missing parameters. " << std::endl;
-      std::cerr << "Usage: " << std::endl;
-      std::cerr << argv[0]
-                << " inputImageFile outputImageFile direction"
-                << std::endl;
-      return -1;
-    }
+  if (argc < 4)
+  {
+    std::cerr << "Missing parameters. " << std::endl;
+    std::cerr << "Usage: " << std::endl;
+    std::cerr << argv[0] << " inputImageFile outputImageFile direction"
+              << std::endl;
+    return EXIT_FAILURE;
+  }
 
-  typedef float                             PixelType;
-  typedef itk::Image< PixelType, 2 >        ImageType;
-  typedef itk::ImageFileReader< ImageType > ReaderType;
+  using PixelType = float;
+  using ImageType = itk::Image<PixelType, 2>;
+  using ReaderType = itk::ImageFileReader<ImageType>;
 
-  typedef itk::ConstNeighborhoodIterator< ImageType > NeighborhoodIteratorType;
-  typedef itk::ImageRegionIterator< ImageType>        IteratorType;
+  using NeighborhoodIteratorType = itk::ConstNeighborhoodIterator<ImageType>;
+  using IteratorType = itk::ImageRegionIterator<ImageType>;
 
-  ReaderType::Pointer reader = ReaderType::New();
-  reader->SetFileName( argv[1] );
+  auto reader = ReaderType::New();
+  reader->SetFileName(argv[1]);
   try
-    {
+  {
     reader->Update();
-    }
-  catch ( itk::ExceptionObject &err)
-    {
-    std::cout << "ExceptionObject caught !" << std::endl; 
-    std::cout << err << std::endl; 
-    return -1;
-    }
-  
-  ImageType::Pointer output = ImageType::New();
+  }
+  catch (const itk::ExceptionObject & err)
+  {
+    std::cerr << "ExceptionObject caught !" << std::endl;
+    std::cerr << err << std::endl;
+    return EXIT_FAILURE;
+  }
+
+  auto output = ImageType::New();
   output->SetRegions(reader->GetOutput()->GetRequestedRegion());
   output->Allocate();
-  
+
   IteratorType out(output, reader->GetOutput()->GetRequestedRegion());
-  
+
   // Software Guide : BeginLatex
   //
   // \index{convolution!kernels}
   // \index{convolution!operators}
   // \index{iterators!neighborhood!and convolution}
   //
-  // Refer to the previous example for a description of reading the input image and
-  // setting up the output image and iterator.
+  // Refer to the previous example for a description of reading the input
+  // image and setting up the output image and iterator.
   //
   // The following code creates a Sobel operator.  The Sobel operator requires
-  // a direction for its partial derivatives.  This direction is read from the command line.
-  // Changing the direction of the derivatives changes the bias of the edge
-  // detection, i.e. maximally vertical or maximally horizontal.
+  // a direction for its partial derivatives.  This direction is read from the
+  // command line. Changing the direction of the derivatives changes the bias
+  // of the edge detection, i.e. maximally vertical or maximally horizontal.
   //
   // Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
   itk::SobelOperator<PixelType, 2> sobelOperator;
-  sobelOperator.SetDirection( ::atoi(argv[3]) );
+  sobelOperator.SetDirection(std::stoi(argv[3]));
   sobelOperator.CreateDirectional();
   // Software Guide : EndCodeSnippet
 
   // Software Guide : BeginLatex
   //
-  // The neighborhood iterator is initialized as before, except that now it takes
-  // its radius directly from the radius of the Sobel operator.  The inner
-  // product function object is templated over image type and requires no 
-  // initialization.
+  // The neighborhood iterator is initialized as before, except that now it
+  // takes its radius directly from the radius of the Sobel operator.  The
+  // inner product function object is templated over image type and requires
+  // no initialization.
   //
   // Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  NeighborhoodIteratorType::RadiusType radius = sobelOperator.GetRadius();
-  NeighborhoodIteratorType it( radius, reader->GetOutput(), 
-                               reader->GetOutput()->GetRequestedRegion() );
-  
-  itk::NeighborhoodInnerProduct<ImageType> innerProduct;
+  const NeighborhoodIteratorType::RadiusType radius =
+    sobelOperator.GetRadius();
+  NeighborhoodIteratorType it(
+    radius, reader->GetOutput(), reader->GetOutput()->GetRequestedRegion());
+
+  const itk::NeighborhoodInnerProduct<ImageType> innerProduct;
   // Software Guide : EndCodeSnippet
 
   // Software Guide : BeginLatex
   //
-  // Using the Sobel operator, inner product, and neighborhood iterator objects,
-  // we can now write a very simple \code{for} loop for performing convolution
-  // filtering.  As before, out-of-bounds pixel values are supplied automatically
-  // by the iterator.
+  // Using the Sobel operator, inner product, and neighborhood iterator
+  // objects, we can now write a very simple \code{for} loop for performing
+  // convolution filtering.  As before, out-of-bounds pixel values are
+  // supplied automatically by the iterator.
   //
   // Software Guide : EndLatex
-    
+
   // Software Guide : BeginCodeSnippet
   for (it.GoToBegin(), out.GoToBegin(); !it.IsAtEnd(); ++it, ++out)
-    {
-    out.Set( innerProduct( it, sobelOperator ) );
-    }
+  {
+    out.Set(innerProduct(it, sobelOperator));
+  }
   // Software Guide : EndCodeSnippet
-  
+
   // Software Guide : BeginLatex
   //
   // The output is rescaled and written as in the previous example.  Applying
-  // this example in the $x$ and $y$ directions produces the images at the center
-  // and right of Figure~\ref{fig:NeighborhoodExamples1}. Note that x-direction 
-  // operator produces the same output image as in the previous example.
-  // 
+  // this example in the $x$ and $y$ directions produces the images at the
+  // center and right of Figure~\ref{fig:NeighborhoodExamples1}. Note that
+  // x-direction operator produces the same output image as in the previous
+  // example.
+  //
   // Software Guide : EndLatex
 
-  typedef unsigned char                          WritePixelType;
-  typedef itk::Image< WritePixelType, 2 >        WriteImageType;
-  typedef itk::ImageFileWriter< WriteImageType > WriterType;
-  
-  typedef itk::RescaleIntensityImageFilter< 
-               ImageType, WriteImageType > RescaleFilterType;
+  using WritePixelType = unsigned char;
+  using WriteImageType = itk::Image<WritePixelType, 2>;
+  using WriterType = itk::ImageFileWriter<WriteImageType>;
 
-  RescaleFilterType::Pointer rescaler = RescaleFilterType::New();
+  using RescaleFilterType =
+    itk::RescaleIntensityImageFilter<ImageType, WriteImageType>;
 
-  rescaler->SetOutputMinimum(   0 );
-  rescaler->SetOutputMaximum( 255 );
+  auto rescaler = RescaleFilterType::New();
+
+  rescaler->SetOutputMinimum(0);
+  rescaler->SetOutputMaximum(255);
   rescaler->SetInput(output);
-  
-  WriterType::Pointer writer = WriterType::New();
-  writer->SetFileName( argv[2] );
+
+  auto writer = WriterType::New();
+  writer->SetFileName(argv[2]);
   writer->SetInput(rescaler->GetOutput());
   try
-    {
+  {
     writer->Update();
-    }
-  catch ( itk::ExceptionObject &err)
-    {
-    std::cout << "ExceptionObject caught !" << std::endl; 
-    std::cout << err << std::endl; 
-    return -1;   
-    }
+  }
+  catch (const itk::ExceptionObject & err)
+  {
+    std::cerr << "ExceptionObject caught !" << std::endl;
+    std::cerr << err << std::endl;
+    return EXIT_FAILURE;
+  }
 
-  return 0;
+  return EXIT_SUCCESS;
 }
