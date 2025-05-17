@@ -1,37 +1,32 @@
 /*=========================================================================
-  Program:   Insight Segmentation & Registration Toolkit
-  Module:    OtsuThresholdImageFilter.cxx
-  Language:  C++
-  Date:      $Date$
-  Version:   $Revision$
-
-  Copyright (c) Insight Software Consortium. All rights reserved.
-  See ITKCopyright.txt or http://www.itk.org/HTML/Copyright.htm for details.
-
-     This software is distributed WITHOUT ANY WARRANTY; without even 
-     the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR 
-     PURPOSE.  See the above copyright notices for more information.
-
-=========================================================================*/
-#if defined(_MSC_VER)
-#pragma warning ( disable : 4786 )
-#endif
-
-#ifdef __BORLANDC__
-#define ITK_LEAN_AND_MEAN
-#endif
+ *
+ *  Copyright NumFOCUS
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *         https://www.apache.org/licenses/LICENSE-2.0.txt
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *
+ *=========================================================================*/
 
 //  Software Guide : BeginCommandLineArgs
-//    INPUTS: {BrainProtonDensitySlice.png}
+//    INPUTS:  {BrainProtonDensitySlice.png}
 //    OUTPUTS: {OtsuThresholdImageFilterOutput.png}
-//    255 0
+//    ARGUMENTS:    255 0
 //  Software Guide : EndCommandLineArgs
 
 // Software Guide : BeginLatex
 //
 // This example illustrates how to use the \doxygen{OtsuThresholdImageFilter}.
 //
-// Software Guide : EndLatex 
+// Software Guide : EndLatex
 
 // Software Guide : BeginCodeSnippet
 #include "itkOtsuThresholdImageFilter.h"
@@ -41,26 +36,28 @@
 #include "itkImageFileReader.h"
 #include "itkImageFileWriter.h"
 
-int main( int argc, char * argv[] )
+int
+main(int argc, char * argv[])
 {
-  if( argc < 5 )
-    {
+  if (argc < 5)
+  {
     std::cerr << "Usage: " << argv[0];
-    std::cerr << " inputImageFile outputImageFile ";  
-    std::cerr << " insideValue    outsideValue   "  << std::endl;  
+    std::cerr << " inputImageFile outputImageFile ";
+    std::cerr << " insideValue    outsideValue   " << std::endl;
     return EXIT_FAILURE;
-    }
-  
+  }
+
   //  Software Guide : BeginLatex
   //
-  //  The next step is to decide which pixel types to use for the input and output
-  //  images.
+  //  The next step is to decide which pixel types to use for the input and
+  //  output images, and to define the image dimension.
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  typedef  unsigned char  InputPixelType;
-  typedef  unsigned char  OutputPixelType;
+  using InputPixelType = unsigned char;
+  using OutputPixelType = unsigned char;
+  constexpr unsigned int Dimension = 2;
   // Software Guide : EndCodeSnippet
 
 
@@ -69,11 +66,11 @@ int main( int argc, char * argv[] )
   //  The input and output image types are now defined using their respective
   //  pixel types and dimensions.
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  typedef itk::Image< InputPixelType,  2 >   InputImageType;
-  typedef itk::Image< OutputPixelType, 2 >   OutputImageType;
+  using InputImageType = itk::Image<InputPixelType, Dimension>;
+  using OutputImageType = itk::Image<OutputPixelType, Dimension>;
   // Software Guide : EndCodeSnippet
 
 
@@ -82,147 +79,142 @@ int main( int argc, char * argv[] )
   //  The filter type can be instantiated using the input and output image
   //  types defined above.
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  typedef itk::OtsuThresholdImageFilter<
-               InputImageType, OutputImageType >  FilterType;
+  using FilterType =
+    itk::OtsuThresholdImageFilter<InputImageType, OutputImageType>;
   // Software Guide : EndCodeSnippet
 
 
   //  Software Guide : BeginLatex
   //
   //  An \doxygen{ImageFileReader} class is also instantiated in order to read
-  //  image data from a file. (See Section \ref{sec:IO} on page 
+  //  image data from a file. (See Section \ref{sec:IO} on page
   //  \pageref{sec:IO} for more information about reading
-  //  and writing data.) 
+  //  and writing data.)
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  typedef itk::ImageFileReader< InputImageType >  ReaderType;
+  using ReaderType = itk::ImageFileReader<InputImageType>;
   // Software Guide : EndCodeSnippet
 
 
   //  Software Guide : BeginLatex
-  //  
+  //
   // An \doxygen{ImageFileWriter} is instantiated in order to write the output
   // image to a file.
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
 
   // Software Guide : BeginCodeSnippet
-  typedef itk::ImageFileWriter< OutputImageType >  WriterType;
+  using WriterType = itk::ImageFileWriter<OutputImageType>;
   // Software Guide : EndCodeSnippet
 
 
   //  Software Guide : BeginLatex
   //
-  //  Both the filter and the reader are created by invoking their \code{New()}
-  //  methods and assigning the result to \doxygen{SmartPointer}s.
+  //  Both the filter and the reader are created by invoking their
+  //  \code{New()} methods and assigning the result to
+  //  \doxygen{SmartPointer}s.
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  ReaderType::Pointer reader = ReaderType::New();
-  FilterType::Pointer filter = FilterType::New();
+  auto reader = ReaderType::New();
+  auto filter = FilterType::New();
   // Software Guide : EndCodeSnippet
 
-  WriterType::Pointer writer = WriterType::New();
-  writer->SetInput( filter->GetOutput() );
-  reader->SetFileName( argv[1] );
+  auto writer = WriterType::New();
+  writer->SetInput(filter->GetOutput());
+  reader->SetFileName(argv[1]);
 
 
   //  Software Guide : BeginLatex
-  //  
+  //
   //  The image obtained with the reader is passed as input to the
-  //  OtsuThresholdImageFilter.
+  //  \code{OtsuThresholdImageFilter}.
   //
   //  \index{itk::Otsu\-Threshold\-Image\-Filter!SetInput()}
   //  \index{itk::FileImageReader!GetOutput()}
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  filter->SetInput( reader->GetOutput() );
+  filter->SetInput(reader->GetOutput());
   // Software Guide : EndCodeSnippet
 
 
   //  Software Guide : BeginLatex
-  //  
+  //
   //  The method \code{SetOutsideValue()} defines the intensity value to be
   //  assigned to those pixels whose intensities are outside the range defined
   //  by the lower and upper thresholds. The method \code{SetInsideValue()}
   //  defines the intensity value to be assigned to pixels with intensities
   //  falling inside the threshold range.
-  //  
+  //
   //  \index{itk::Otsu\-Threshold\-Image\-Filter!SetOutsideValue()}
   //  \index{itk::Otsu\-Threshold\-Image\-Filter!SetInsideValue()}
   //  \index{SetOutsideValue()!itk::Otsu\-Threshold\-Image\-Filter}
   //  \index{SetInsideValue()!itk::Otsu\-Threshold\-Image\-Filter}
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
-  const OutputPixelType outsideValue = atoi( argv[3] );
-  const OutputPixelType insideValue  = atoi( argv[4] );
+  const OutputPixelType outsideValue = std::stoi(argv[3]);
+  const OutputPixelType insideValue = std::stoi(argv[4]);
 
   // Software Guide : BeginCodeSnippet
-  filter->SetOutsideValue( outsideValue );
-  filter->SetInsideValue(  insideValue  );
+  filter->SetOutsideValue(outsideValue);
+  filter->SetInsideValue(insideValue);
   // Software Guide : EndCodeSnippet
 
 
   //  Software Guide : BeginLatex
-  //  
-  //  The method \code{SetNumberOfHistogramBins()} defines the number of bins
-  //  to be used for computing the histogram. This histogram will be used
-  //  internally in order to compute the Otsu threshold.
   //
-  //  Software Guide : EndLatex 
+  //  Execution of the filter is triggered by invoking the \code{Update()}
+  //  method, which we wrap in a \code{try/catch} block.  If the filter's
+  //  output has been passed as input to subsequent filters, the
+  //  \code{Update()} call on any downstream filters in the pipeline will
+  //  indirectly trigger the update of this filter.
+  //
+  //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  filter->SetNumberOfHistogramBins( 128 );
+  try
+  {
+    filter->Update();
+  }
+  catch (const itk::ExceptionObject & excp)
+  {
+    std::cerr << "Exception thrown " << excp << std::endl;
+  }
   // Software Guide : EndCodeSnippet
 
 
   //  Software Guide : BeginLatex
-  //  
-  //  The execution of the filter is triggered by invoking the \code{Update()}
-  //  method.   If the filter's output has been passed as input to subsequent
-  //  filters, the \code{Update()} call on any posterior filters in the
-  //  pipeline will indirectly trigger the update of this filter.
   //
-  //  Software Guide : EndLatex 
+  //  We can now retrieve the internally-computed threshold value with the
+  //  \code{GetThreshold()} method and print it to the console.
+  //
+  //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  filter->Update();
-  // Software Guide : EndCodeSnippet
-
-
-
-  //  Software Guide : BeginLatex
-  //  
-  //  We print out here the Threshold value that was computed internally by the
-  //  filter. For this we invoke the \code{GetThreshold} method.
-  //
-  //  Software Guide : EndLatex 
-
-  // Software Guide : BeginCodeSnippet
-  int threshold = filter->GetThreshold();
+  const int threshold = filter->GetThreshold();
   std::cout << "Threshold = " << threshold << std::endl;
   // Software Guide : EndCodeSnippet
 
 
-
   //  Software Guide : BeginLatex
-  //  
+  //
   // \begin{figure}
   // \center
-  // \includegraphics[width=0.44\textwidth]{BrainProtonDensitySlice.eps}
-  // \includegraphics[width=0.44\textwidth]{OtsuThresholdImageFilterOutput.eps}
-  // \itkcaption[OtsuThresholdImageFilter output]{Effect of the OtsuThresholdImageFilter on a slice from a MRI
-  // proton density image  of the brain.}
+  // \includegraphics[width=0.44\textwidth]{BrainProtonDensitySlice}
+  // \includegraphics[width=0.44\textwidth]{OtsuThresholdImageFilterOutput}
+  // \itkcaption[OtsuThresholdImageFilter output]{Effect of the
+  // OtsuThresholdImageFilter on a slice from a MRI proton density image  of
+  // the brain.}
   // \label{fig:OtsuThresholdImageFilterInputOutput}
   // \end{figure}
   //
@@ -238,11 +230,17 @@ int main( int argc, char * argv[] )
   //  \item \doxygen{ThresholdImageFilter}
   //  \end{itemize}
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
-  writer->SetFileName( argv[2] );
-  writer->Update();
+  writer->SetFileName(argv[2]);
+  try
+  {
+    writer->Update();
+  }
+  catch (const itk::ExceptionObject & excp)
+  {
+    std::cerr << "Exception thrown " << excp << std::endl;
+  }
 
   return EXIT_SUCCESS;
 }
-

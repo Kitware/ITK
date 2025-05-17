@@ -1,36 +1,30 @@
 /*=========================================================================
-
-  Program:   Insight Segmentation & Registration Toolkit
-  Module:    GradientMagnitudeRecursiveGaussianImageFilter.cxx
-  Language:  C++
-  Date:      $Date$
-  Version:   $Revision$
-
-  Copyright (c) Insight Software Consortium. All rights reserved.
-  See ITKCopyright.txt or http://www.itk.org/HTML/Copyright.htm for details.
-
-     This software is distributed WITHOUT ANY WARRANTY; without even 
-     the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR 
-     PURPOSE.  See the above copyright notices for more information.
-
-=========================================================================*/
-#if defined(_MSC_VER)
-#pragma warning ( disable : 4786 )
-#endif
-
-#ifdef __BORLANDC__
-#define ITK_LEAN_AND_MEAN
-#endif
+ *
+ *  Copyright NumFOCUS
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *         https://www.apache.org/licenses/LICENSE-2.0.txt
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *
+ *=========================================================================*/
 
 //  Software Guide : BeginCommandLineArgs
-//    INPUTS: {BrainProtonDensitySlice.png}
+//    INPUTS:  {BrainProtonDensitySlice.png}
 //    OUTPUTS: {GradientMagnitudeRecursiveGaussianImageFilterOutput3.png}
-//    3
+//    ARGUMENTS:    3
 //  Software Guide : EndCommandLineArgs
 //  Software Guide : BeginCommandLineArgs
-//    INPUTS: {BrainProtonDensitySlice.png}
+//    INPUTS:  {BrainProtonDensitySlice.png}
 //    OUTPUTS: {GradientMagnitudeRecursiveGaussianImageFilterOutput5.png}
-//    5
+//    ARGUMENTS:    5
 //  Software Guide : EndCommandLineArgs
 
 //  Software Guide : BeginLatex
@@ -51,21 +45,20 @@
 //  selects the value of $\sigma$.
 //
 //  Internally this is done by applying an IIR \footnote{Infinite Impulse
-//  Response} filter that approximates a convolution with the derivative of the
-//  Gaussian kernel.  Traditional convolution will produce a more accurate
+//  Response} filter that approximates a convolution with the derivative of
+//  the Gaussian kernel.  Traditional convolution will produce a more accurate
 //  result, but the IIR approach is much faster, especially using large
 //  $\sigma$s \cite{Deriche1990,Deriche1993}.
 //
 //  GradientMagnitudeRecursiveGaussianImageFilter will work on images of
 //  any dimension by taking advantage of the natural separability of the
-//  Gaussian kernel and its derivatives. 
+//  Gaussian kernel and its derivatives.
 //
 //  \index{itk::Gradient\-Magnitude\-Recursive\-Gaussian\-Image\-Filter}
 //
-//  Software Guide : EndLatex 
+//  Software Guide : EndLatex
 
 
-#include "itkImage.h"
 #include "itkImageFileReader.h"
 #include "itkImageFileWriter.h"
 #include "itkRescaleIntensityImageFilter.h"
@@ -77,33 +70,35 @@
 //
 //  \index{itk::Gradient\-Magnitude\-Recursive\-Gaussian\-Image\-Filter!header}
 //
-//  Software Guide : EndLatex 
+//  Software Guide : EndLatex
 
 // Software Guide : BeginCodeSnippet
 #include "itkGradientMagnitudeRecursiveGaussianImageFilter.h"
 // Software Guide : EndCodeSnippet
 
 
-int main( int argc, char * argv[] )
+int
+main(int argc, char * argv[])
 {
-  if( argc < 4 ) 
-    { 
+  if (argc < 4)
+  {
     std::cerr << "Usage: " << std::endl;
-    std::cerr << argv[0] << "  inputImageFile   outputImageFile   sigma" << std::endl;
+    std::cerr << argv[0] << "  inputImageFile   outputImageFile   sigma"
+              << std::endl;
     return EXIT_FAILURE;
-    }
+  }
 
-  
+
   //  Software Guide : BeginLatex
   //
   //  Types should be instantiated based on the pixels of the input and
   //  output images.
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  typedef    float    InputPixelType;
-  typedef    float    OutputPixelType;
+  using InputPixelType = float;
+  using OutputPixelType = float;
   // Software Guide : EndCodeSnippet
 
 
@@ -111,15 +106,15 @@ int main( int argc, char * argv[] )
   //
   //  With them, the input and output image types can be instantiated.
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  typedef itk::Image< InputPixelType,  2 >   InputImageType;
-  typedef itk::Image< OutputPixelType, 2 >   OutputImageType;
+  using InputImageType = itk::Image<InputPixelType, 2>;
+  using OutputImageType = itk::Image<OutputPixelType, 2>;
   // Software Guide : EndCodeSnippet
 
 
-  typedef itk::ImageFileReader< InputImageType >  ReaderType;
+  using ReaderType = itk::ImageFileReader<InputImageType>;
 
 
   //  Software Guide : BeginLatex
@@ -129,16 +124,17 @@ int main( int argc, char * argv[] )
   //
   //  \index{itk::Gradient\-Magnitude\-Recursive\-Gaussian\-Image\-Filter!Instantiation}
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  typedef itk::GradientMagnitudeRecursiveGaussianImageFilter<
-                        InputImageType, OutputImageType >  FilterType;
+  using FilterType =
+    itk::GradientMagnitudeRecursiveGaussianImageFilter<InputImageType,
+                                                       OutputImageType>;
   // Software Guide : EndCodeSnippet
 
 
-  ReaderType::Pointer reader = ReaderType::New();
-  reader->SetFileName( argv[1] );
+  auto reader = ReaderType::New();
+  reader->SetFileName(argv[1]);
 
 
   //  Software Guide : BeginLatex
@@ -149,10 +145,10 @@ int main( int argc, char * argv[] )
   //  \index{itk::Gradient\-Magnitude\-Recursive\-Gaussian\-Image\-Filter!New()}
   //  \index{itk::Gradient\-Magnitude\-Recursive\-Gaussian\-Image\-Filter!Pointer}
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  FilterType::Pointer filter = FilterType::New();
+  auto filter = FilterType::New();
   // Software Guide : EndCodeSnippet
 
 
@@ -161,10 +157,10 @@ int main( int argc, char * argv[] )
   //  The input image can be obtained from the output of another filter. Here,
   //  an image reader is used as source.
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  filter->SetInput( reader->GetOutput() );
+  filter->SetInput(reader->GetOutput());
   // Software Guide : EndCodeSnippet
 
 
@@ -175,12 +171,12 @@ int main( int argc, char * argv[] )
   //  \index{itk::Gradient\-Magnitude\-Recursive\-Gaussian\-Image\-Filter!SetSigma()}
   //  \index{SetSigma()!itk::Gradient\-Magnitude\-Recursive\-Gaussian\-Image\-Filter}
   //
-  //  Software Guide : EndLatex 
-  const double sigma = atof( argv[3] );
+  //  Software Guide : EndLatex
+  const double sigma = std::stod(argv[3]);
 
 
   // Software Guide : BeginCodeSnippet
-  filter->SetSigma( sigma );
+  filter->SetSigma(sigma);
   // Software Guide : EndCodeSnippet
 
 
@@ -190,7 +186,7 @@ int main( int argc, char * argv[] )
   //
   //  \index{itk::Gradient\-Magnitude\-Recursive\-Gaussian\-Image\-Filter!Update()}
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
 
   // Software Guide : BeginCodeSnippet
@@ -205,43 +201,43 @@ int main( int argc, char * argv[] )
   //  example, we may connect this gradient magnitude filter to an image file
   //  writer and then update the writer.
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
 
-  typedef  unsigned char  WritePixelType;
-  typedef itk::Image< WritePixelType, 2 >    WriteImageType;
+  using WritePixelType = unsigned char;
+  using WriteImageType = itk::Image<WritePixelType, 2>;
 
-  typedef itk::RescaleIntensityImageFilter< 
-                   OutputImageType, WriteImageType > RescaleFilterType;
+  using RescaleFilterType =
+    itk::RescaleIntensityImageFilter<OutputImageType, WriteImageType>;
 
-  RescaleFilterType::Pointer rescaler = RescaleFilterType::New();
-  
-  rescaler->SetOutputMinimum(   0 );
-  rescaler->SetOutputMaximum( 255 );
+  auto rescaler = RescaleFilterType::New();
 
-  typedef itk::ImageFileWriter< WriteImageType >  WriterType;
+  rescaler->SetOutputMinimum(0);
+  rescaler->SetOutputMaximum(255);
 
-  WriterType::Pointer writer = WriterType::New();
+  using WriterType = itk::ImageFileWriter<WriteImageType>;
 
-  writer->SetFileName( argv[2] );
- 
+  auto writer = WriterType::New();
+
+  writer->SetFileName(argv[2]);
+
 
   // Software Guide : BeginCodeSnippet
-  rescaler->SetInput( filter->GetOutput() );
-  writer->SetInput( rescaler->GetOutput() );
+  rescaler->SetInput(filter->GetOutput());
+  writer->SetInput(rescaler->GetOutput());
   writer->Update();
   // Software Guide : EndCodeSnippet
-  
+
 
   //  Software Guide : BeginLatex
-  //  
+  //
   // \begin{figure}
   // \center
-  // \includegraphics[width=0.44\textwidth]{GradientMagnitudeRecursiveGaussianImageFilterOutput3.eps}
-  // \includegraphics[width=0.44\textwidth]{GradientMagnitudeRecursiveGaussianImageFilterOutput5.eps}
-  // \itkcaption[GradientMagnitudeRecursiveGaussianImageFilter output]{Effect of
-  // the GradientMagnitudeRecursiveGaussianImageFilter on a slice from a MRI
-  // proton density image of the brain.}
+  // \includegraphics[width=0.44\textwidth]{GradientMagnitudeRecursiveGaussianImageFilterOutput3}
+  // \includegraphics[width=0.44\textwidth]{GradientMagnitudeRecursiveGaussianImageFilterOutput5}
+  // \itkcaption[GradientMagnitudeRecursiveGaussianImageFilter output]{Effect
+  // of the GradientMagnitudeRecursiveGaussianImageFilter on a slice from a
+  // MRI proton density image of the brain.}
   // \label{fig:GradientMagnitudeRecursiveGaussianImageFilterInputOutput}
   // \end{figure}
   //
@@ -253,13 +249,12 @@ int main( int argc, char * argv[] )
   //  regulated by selecting an appropriate $\sigma$.  This type of
   //  scale-tunable filter is suitable for performing scale-space analysis.
   //
-  /// Attention should be paid to the image type chosen to represent the output
+  // Attention should be paid to the image type chosen to represent the output
   //  image since the dynamic range of the gradient magnitude image is usually
-  //  smaller than the dynamic range of the input image. 
+  //  smaller than the dynamic range of the input image.
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
 
   return EXIT_SUCCESS;
 }
-

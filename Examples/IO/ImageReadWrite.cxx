@@ -1,26 +1,20 @@
 /*=========================================================================
-
-  Program:   Insight Segmentation & Registration Toolkit
-  Module:    ImageReadWrite.cxx
-  Language:  C++
-  Date:      $Date$
-  Version:   $Revision$
-
-  Copyright (c) Insight Software Consortium. All rights reserved.
-  See ITKCopyright.txt or http://www.itk.org/HTML/Copyright.htm for details.
-
-     This software is distributed WITHOUT ANY WARRANTY; without even 
-     the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR 
-     PURPOSE.  See the above copyright notices for more information.
-
-=========================================================================*/
-#if defined(_MSC_VER)
-#pragma warning ( disable : 4786 )
-#endif
-
-#ifdef __BORLANDC__
-#define ITK_LEAN_AND_MEAN
-#endif
+ *
+ *  Copyright NumFOCUS
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *         https://www.apache.org/licenses/LICENSE-2.0.txt
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *
+ *=========================================================================*/
 
 //  Software Guide : BeginLatex
 //
@@ -56,15 +50,16 @@
 #include "itkImage.h"
 
 
-int main( int argc, char ** argv )
+int
+main(int argc, char ** argv)
 {
   // Verify the number of parameters in the command line
-  if( argc < 3 )
-    {
+  if (argc < 3)
+  {
     std::cerr << "Usage: " << std::endl;
     std::cerr << argv[0] << " inputImageFile  outputImageFile " << std::endl;
     return EXIT_FAILURE;
-    }
+  }
 
 
   //  Software Guide : BeginLatex
@@ -77,12 +72,12 @@ int main( int argc, char ** argv )
   //  driven mainly by two considerations:
   //
   //  \begin{itemize}
-  //  \item It should be possible to cast the file pixel type in the file to
+  //  \item It should be possible to cast the pixel type in the file to
   //  the pixel type you select. This casting will be performed using the
   //  standard C-language rules, so you will have to make sure that the
   //  conversion does not result in information being lost.
   //  \item The pixel type in memory should be appropriate to the type of
-  //  processing you intended to apply on the images. 
+  //  processing you intend to apply on the images.
   //  \end{itemize}
   //
   //  A typical selection for medical images is illustrated in
@@ -91,18 +86,18 @@ int main( int argc, char ** argv )
   //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  typedef short      PixelType;
-  const   unsigned int        Dimension = 2;
-  typedef itk::Image< PixelType, Dimension >    ImageType;
+  using PixelType = short;
+  constexpr unsigned int Dimension = 2;
+  using ImageType = itk::Image<PixelType, Dimension>;
   // Software Guide : EndCodeSnippet
 
 
   //  Software Guide : BeginLatex
   //
-  //  Note that the dimension of the image in memory should match the one of
-  //  the image in file. There are a couple of special cases in which this
-  //  condition may be relaxed, but in general it is better to ensure that both
-  //  dimensions match.
+  //  Note that the dimension of the image in memory should match that of
+  //  the image in the file. There are a couple of special cases in which this
+  //  condition may be relaxed, but in general it is better to ensure that
+  //  both dimensions match.
   //
   //  We can now instantiate the types of the reader and writer. These two
   //  classes are parameterized over the image type.
@@ -113,50 +108,50 @@ int main( int argc, char ** argv )
   //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  typedef itk::ImageFileReader< ImageType >  ReaderType;
-  typedef itk::ImageFileWriter< ImageType >  WriterType;
+  using ReaderType = itk::ImageFileReader<ImageType>;
+  using WriterType = itk::ImageFileWriter<ImageType>;
   // Software Guide : EndCodeSnippet
 
 
   //  Software Guide : BeginLatex
   //
   //  Then, we create one object of each type using the New() method and
-  //  assigning the result to a \doxygen{SmartPointer}.
+  //  assign the result to a \doxygen{SmartPointer}.
   //
   //  \index{itk::ImageFileReader!New()}
   //  \index{itk::ImageFileWriter!New()}
   //  \index{itk::ImageFileReader!SmartPointer}
   //  \index{itk::ImageFileWriter!SmartPointer}
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  ReaderType::Pointer reader = ReaderType::New();
-  WriterType::Pointer writer = WriterType::New();
+  auto reader = ReaderType::New();
+  auto writer = WriterType::New();
   // Software Guide : EndCodeSnippet
 
 
   // Here we recover the file names from the command line arguments
   //
-  const char * inputFilename  = argv[1];
+  const char * inputFilename = argv[1];
   const char * outputFilename = argv[2];
 
 
   //  Software Guide : BeginLatex
   //
-  //  The name of the file to be read or written is passed with the
-  //  SetFileName() method. 
+  //  The name of the file to be read or written is passed to the
+  //  SetFileName() method.
   //
   //  \index{itk::ImageFileReader!SetFileName()}
   //  \index{itk::ImageFileWriter!SetFileName()}
   //  \index{SetFileName()!itk::ImageFileReader}
   //  \index{SetFileName()!itk::ImageFileWriter}
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  reader->SetFileName( inputFilename  );
-  writer->SetFileName( outputFilename );
+  reader->SetFileName(inputFilename);
+  writer->SetFileName(outputFilename);
   // Software Guide : EndCodeSnippet
 
 
@@ -166,37 +161,38 @@ int main( int argc, char ** argv )
   //  pipeline. For example, we can create a short pipeline by passing
   //  the output of the reader directly to the input of the writer.
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  writer->SetInput( reader->GetOutput() );
+  writer->SetInput(reader->GetOutput());
   // Software Guide : EndCodeSnippet
 
 
   //  Software Guide : BeginLatex
   //
-  //  At first view, this may seem as a quite useless program, but it is
+  //  At first glance this may look like a quite useless program, but it is
   //  actually implementing a powerful file format conversion tool! The
   //  execution of the pipeline is triggered by the invocation of the
-  //  \code{Update()} methods in one of the final objects. In this case, the final
-  //  data pipeline object is the writer. It is a wise practice of defensive
-  //  programming to insert any \code{Update()} call inside a \code{try/catch} block
-  //  in case exceptions are thrown during the execution of the pipeline.
+  //  \code{Update()} methods in one of the final objects. In this case, the
+  //  final data pipeline object is the writer. It is a wise practice of
+  //  defensive programming to insert any \code{Update()} call inside a
+  //  \code{try/catch} block in case exceptions are thrown during the
+  //  execution of the pipeline.
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
 
   // Software Guide : BeginCodeSnippet
-  try 
-    { 
-    writer->Update(); 
-    } 
-  catch( itk::ExceptionObject & err ) 
-    { 
-    std::cerr << "ExceptionObject caught !" << std::endl; 
-    std::cerr << err << std::endl; 
+  try
+  {
+    writer->Update();
+  }
+  catch (const itk::ExceptionObject & err)
+  {
+    std::cerr << "ExceptionObject caught !" << std::endl;
+    std::cerr << err << std::endl;
     return EXIT_FAILURE;
-    } 
+  }
   // Software Guide : EndCodeSnippet
 
 
@@ -204,7 +200,7 @@ int main( int argc, char ** argv )
   //
   //  Note that exceptions should only be caught by pieces of code that know
   //  what to do with them. In a typical application this \code{catch} block
-  //  should probably reside on the GUI code. The action on the \code{catch}
+  //  should probably reside in the GUI code. The action on the \code{catch}
   //  block could inform the user about the failure of the IO operation.
   //
   //  The IO architecture of the toolkit makes it possible to avoid explicit
@@ -212,19 +208,20 @@ int main( int argc, char ** argv )
   //  images.\footnote{In this example no file format is specified; this
   //  program can be used as a general file conversion utility.}  The object
   //  factory mechanism enables the ImageFileReader and ImageFileWriter to
-  //  determine (at run-time) with which file format it is working
+  //  determine (at run-time) which file format it is working
   //  with. Typically, file formats are chosen based on the filename
   //  extension, but the architecture supports arbitrarily complex processes
   //  to determine whether a file can be read or written. Alternatively, the
   //  user can specify the data file format by explicit instantiation and
-  //  assignment the appropriate \doxygen{ImageIO} subclass.
+  //  assignment of the appropriate \doxygen{ImageIO} subclass.
   //
   //  For historical reasons and as a convenience to the user, the
-  //  \doxygen{ImageFileWriter} also has a Write() method that is aliased to
-  //  the \code{Update()} method. You can in principle use either of them but
-  //  \code{Update()} is recommended since Write() may be deprecated in the future.
+  //  \doxygen{ImageFileWriter} also has a \code{Write()} method that is
+  //  aliased to the \code{Update()} method. You can in principle use either
+  //  of them but \code{Update()} is recommended since \code{Write()} may be
+  //  deprecated in the future.
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   return EXIT_SUCCESS;
 }
