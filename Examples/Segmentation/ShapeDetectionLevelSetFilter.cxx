@@ -1,48 +1,56 @@
 /*=========================================================================
+ *
+ *  Copyright NumFOCUS
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *         https://www.apache.org/licenses/LICENSE-2.0.txt
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *
+ *=========================================================================*/
 
-  Program:   Insight Segmentation & Registration Toolkit
-  Module:    ShapeDetectionLevelSetFilter.cxx
-  Language:  C++
-  Date:      $Date$
-  Version:   $Revision$
-
-  Copyright (c) Insight Software Consortium. All rights reserved.
-  See ITKCopyright.txt or http://www.itk.org/HTML/Copyright.htm for details.
-
-     This software is distributed WITHOUT ANY WARRANTY; without even 
-     the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR 
-     PURPOSE.  See the above copyright notices for more information.
-
-=========================================================================*/
-#if defined(_MSC_VER)
-#pragma warning ( disable : 4786 )
-#endif
 //  Software Guide : BeginCommandLineArgs
-#ifdef __BORLANDC__
-#define ITK_LEAN_AND_MEAN
-#endif
-
-//    INPUTS: {BrainProtonDensitySlice.png}
-//    OUTPUTS: {ShapeDetectionLevelSetFilterOutput5.png}
-//    81 114 5 1.0  -0.5  3.0   .05 1
+//    INPUTS:  {BrainProtonDensitySlice.png}
+//    OUTPUTS: {ShapeDetectionLevelSetFilterOutput1.png}
+//    ARGUMENTS:    81 114 5 1.0  -0.5  3.0   .05 1
+//    OUTPUTS: {ShapeDetectionLevelSetFilterOutput1Smoothing.png}
+//    OUTPUTS: {ShapeDetectionLevelSetFilterOutput1GradientMagnitude.png}
+//    OUTPUTS: {ShapeDetectionLevelSetFilterOutput1Sigmoid.png}
+//    OUTPUTS: {ShapeDetectionLevelSetFilterOutput1FastMarching.png}
 //  Software Guide : EndCommandLineArgs
 //  Software Guide : BeginCommandLineArgs
-//    INPUTS: {BrainProtonDensitySlice.png}
-//    OUTPUTS: {ShapeDetectionLevelSetFilterOutput6.png}
-//    99 114 5 1.0  -0.5  3.0   .05 1
+//    INPUTS:  {BrainProtonDensitySlice.png}
+//    OUTPUTS: {ShapeDetectionLevelSetFilterOutput2.png}
+//    ARGUMENTS:    99 114 5 1.0  -0.5  3.0   .05 1
+//    OUTPUTS: {ShapeDetectionLevelSetFilterOutput2Smoothing.png}
+//    OUTPUTS: {ShapeDetectionLevelSetFilterOutput2GradientMagnitude.png}
+//    OUTPUTS: {ShapeDetectionLevelSetFilterOutput2Sigmoid.png}
+//    OUTPUTS: {ShapeDetectionLevelSetFilterOutput2FastMarching.png}
 //  Software Guide : EndCommandLineArgs
 //  Software Guide : BeginCommandLineArgs
-//    INPUTS: {BrainProtonDensitySlice.png}
-//    OUTPUTS: {ShapeDetectionLevelSetFilterOutput7.png}
-//    56 92 5 1.0  -0.3  2.0   .05 1
+//    INPUTS:  {BrainProtonDensitySlice.png}
+//    OUTPUTS: {ShapeDetectionLevelSetFilterOutput3.png}
+//    ARGUMENTS:    56 92 5 1.0  -0.3  2.0   .05 1
+//    OUTPUTS: {ShapeDetectionLevelSetFilterOutput3Smoothing.png}
+//    OUTPUTS: {ShapeDetectionLevelSetFilterOutput3GradientMagnitude.png}
+//    OUTPUTS: {ShapeDetectionLevelSetFilterOutput3Sigmoid.png}
+//    OUTPUTS: {ShapeDetectionLevelSetFilterOutput3FastMarching.png}
 //  Software Guide : EndCommandLineArgs
 //  Software Guide : BeginCommandLineArgs
-//    INPUTS: {BrainProtonDensitySlice.png}
-//    OUTPUTS: {ShapeDetectionLevelSetFilterOutput8.png}
-//    OUTPUTS: [ShapeDetectionLevelSetFilterOutput1.png]
-//    OUTPUTS: [ShapeDetectionLevelSetFilterOutput2.png]
-//    OUTPUTS: [ShapeDetectionLevelSetFilterOutput3.png]
-//    40 90 5 0.5  -0.3  2.0   .05 1
+//    INPUTS:  {BrainProtonDensitySlice.png}
+//    OUTPUTS: {ShapeDetectionLevelSetFilterOutput4.png}
+//    ARGUMENTS:    40 90 5 0.5  -0.3  2.0   .05 1
+//    OUTPUTS: {ShapeDetectionLevelSetFilterOutput4Smoothing.png}
+//    OUTPUTS: {ShapeDetectionLevelSetFilterOutput4GradientMagnitude.png}
+//    OUTPUTS: {ShapeDetectionLevelSetFilterOutput4Sigmoid.png}
+//    OUTPUTS: {ShapeDetectionLevelSetFilterOutput4FastMarching.png}
 //  Software Guide : EndCommandLineArgs
 
 // Software Guide : BeginLatex
@@ -59,13 +67,13 @@
 // contour is no longer guaranteed to always be expanding. Instead, the level
 // set function is updated iteratively.
 //
-// The ShapeDetectionLevelSetImageFilter expects two inputs, 
+// The ShapeDetectionLevelSetImageFilter expects two inputs,
 // the first being an initial Level Set in the form of an
 // \doxygen{Image}, and the second being a feature image. For this algorithm,
 // the feature image is an edge potential image that basically
 // follows the same rules applicable to the speed image used for the
 // FastMarchingImageFilter discussed in
-// Section~\ref{sec:FastMarchingImageFilter}. 
+// Section~\ref{sec:FastMarchingImageFilter}.
 //
 // In this example we use an FastMarchingImageFilter to produce the initial
 // level set as the distance function to a set of user-provided seeds. The
@@ -73,9 +81,10 @@
 // us to employ this filter as a distance map calculator.
 //
 // \begin{figure} \center
-// \includegraphics[width=\textwidth]{ShapeDetectionCollaborationDiagram1.eps}
-// \itkcaption[ShapeDetectionLevelSetImageFilter collaboration diagram]{Collaboration
-// diagram for the ShapeDetectionLevelSetImageFilter applied to a segmentation task.}
+// \includegraphics[width=\textwidth]{ShapeDetectionCollaborationDiagram1}
+// \itkcaption[ShapeDetectionLevelSetImageFilter collaboration
+// diagram]{Collaboration diagram for the ShapeDetectionLevelSetImageFilter
+// applied to a segmentation task.}
 // \label{fig:ShapeDetectionCollaborationDiagram}
 // \end{figure}
 //
@@ -92,16 +101,16 @@
 // this map in order to obtain a level set in which the \emph{zero set}
 // represents the initial contour. This level set is also passed as input to
 // the ShapeDetectionLevelSetImageFilter.
-// 
+//
 // Finally, the level set at the output of the
 // ShapeDetectionLevelSetImageFilter is passed to an
 // BinaryThresholdImageFilter in order to produce a binary mask representing
 // the segmented object.
 //
 // Let's start by including the headers of the main filters involved in the
-// preprocessing. 
+// preprocessing.
 //
-// Software Guide : EndLatex 
+// Software Guide : EndLatex
 
 // Software Guide : BeginCodeSnippet
 #include "itkCurvatureAnisotropicDiffusionImageFilter.h"
@@ -111,35 +120,34 @@
 
 //  Software Guide : BeginLatex
 //
-// The edge potential map is generated using these filters as in the previous 
+// The edge potential map is generated using these filters as in the previous
 // example.
 //
-//  Software Guide : EndLatex 
+//  Software Guide : EndLatex
 
 
 //  Software Guide : BeginLatex
-//  
+//
 //  We will need the Image class, the FastMarchingImageFilter class and the
 //  ShapeDetectionLevelSetImageFilter class. Hence we include their headers
 //  here.
 //
-//  Software Guide : EndLatex 
+//  Software Guide : EndLatex
 
 // Software Guide : BeginCodeSnippet
-#include "itkImage.h"
 #include "itkFastMarchingImageFilter.h"
 #include "itkShapeDetectionLevelSetImageFilter.h"
 // Software Guide : EndCodeSnippet
 
 
 //  Software Guide : BeginLatex
-//  
+//
 //  The level set resulting from the ShapeDetectionLevelSetImageFilter will
 //  be thresholded at the zero level in order to get a binary image
 //  representing the segmented object. The BinaryThresholdImageFilter is used
 //  for this purpose.
 //
-//  Software Guide : EndLatex 
+//  Software Guide : EndLatex
 
 // Software Guide : BeginCodeSnippet
 #include "itkBinaryThresholdImageFilter.h"
@@ -152,66 +160,71 @@
 #include "itkImageFileReader.h"
 #include "itkImageFileWriter.h"
 
+#include "itksys/SystemTools.hxx"
 
-//  The RescaleIntensityImageFilter is used to renormailize the output 
-//  of filters before sending them to files. 
+
+//  The RescaleIntensityImageFilter is used to renormalize the output
+//  of filters before sending them to files.
 #include "itkRescaleIntensityImageFilter.h"
 
 
-int main( int argc, char *argv[] )
+int
+main(int argc, char * argv[])
 {
-  if( argc < 11 )
-    {
+  if (argc < 11)
+  {
     std::cerr << "Missing Parameters " << std::endl;
     std::cerr << "Usage: " << argv[0];
     std::cerr << " inputImage  outputImage";
     std::cerr << " seedX seedY InitialDistance";
     std::cerr << " Sigma SigmoidAlpha SigmoidBeta ";
     std::cerr << " curvatureScaling propagationScaling" << std::endl;
-    return 1;
-    }
+    return EXIT_FAILURE;
+  }
+  const std::string inputImageFile(argv[1]);
+  const std::string outputImageFile(argv[2]);
 
 
   //  Software Guide : BeginLatex
-  //  
+  //
   //  We now define the image type using a particular pixel type and a
   //  dimension. In this case the \code{float} type is used for the pixels
   //  due to the requirements of the smoothing filter.
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  typedef   float           InternalPixelType;
-  const     unsigned int    Dimension = 2;
-  typedef itk::Image< InternalPixelType, Dimension >  InternalImageType;
+  using InternalPixelType = float;
+  constexpr unsigned int Dimension = 2;
+  using InternalImageType = itk::Image<InternalPixelType, Dimension>;
   // Software Guide : EndCodeSnippet
 
 
   //  Software Guide : BeginLatex
-  //  
+  //
   //  The output image, on the other hand, is declared to be binary.
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  typedef unsigned char                            OutputPixelType;
-  typedef itk::Image< OutputPixelType, Dimension > OutputImageType;
+  using OutputPixelType = unsigned char;
+  using OutputImageType = itk::Image<OutputPixelType, Dimension>;
   // Software Guide : EndCodeSnippet
 
 
   //  Software Guide : BeginLatex
-  //  
+  //
   //  The type of the BinaryThresholdImageFilter filter is instantiated below
   //  using the internal image type and the output image type.
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  typedef itk::BinaryThresholdImageFilter< InternalImageType, OutputImageType >
-    ThresholdingFilterType;
-  ThresholdingFilterType::Pointer thresholder = ThresholdingFilterType::New();
+  using ThresholdingFilterType =
+    itk::BinaryThresholdImageFilter<InternalImageType, OutputImageType>;
+  auto thresholder = ThresholdingFilterType::New();
   // Software Guide : EndCodeSnippet
-                        
+
 
   //  Software Guide : BeginLatex
   //
@@ -221,90 +234,79 @@ int main( int argc, char *argv[] )
   //  ensure that the interior of the segmented object will appear
   //  inside the binary region.
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  thresholder->SetLowerThreshold( -1000.0 );
-  thresholder->SetUpperThreshold(     0.0 );
+  thresholder->SetLowerThreshold(-1000.0);
+  thresholder->SetUpperThreshold(0.0);
 
-  thresholder->SetOutsideValue(  0  );
-  thresholder->SetInsideValue(  255 );
+  thresholder->SetOutsideValue(0);
+  thresholder->SetInsideValue(255);
   // Software Guide : EndCodeSnippet
 
 
-  // We instantiate reader and writer types in the following lines.
-  //
-  typedef  itk::ImageFileReader< InternalImageType > ReaderType;
-  typedef  itk::ImageFileWriter<  OutputImageType  > WriterType;
-
-  ReaderType::Pointer reader = ReaderType::New();
-  WriterType::Pointer writer = WriterType::New();
-
-  reader->SetFileName( argv[1] );
-  writer->SetFileName( argv[2] );
-
+  const auto input = itk::ReadImage<InternalImageType>(inputImageFile);
 
   //  The RescaleIntensityImageFilter type is declared below. This filter will
   //  renormalize image before sending them to writers.
   //
-  typedef itk::RescaleIntensityImageFilter<InternalImageType, OutputImageType>
-    CastFilterType;
+  using CastFilterType =
+    itk::RescaleIntensityImageFilter<InternalImageType, OutputImageType>;
 
   //  Software Guide : BeginLatex
-  //  
+  //
   //  The CurvatureAnisotropicDiffusionImageFilter type is instantiated using
   //  the internal image type.
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  typedef   itk::CurvatureAnisotropicDiffusionImageFilter< 
-                               InternalImageType, 
-                               InternalImageType >  SmoothingFilterType;
+  using SmoothingFilterType =
+    itk::CurvatureAnisotropicDiffusionImageFilter<InternalImageType,
+                                                  InternalImageType>;
   // Software Guide : EndCodeSnippet
 
 
   //  Software Guide : BeginLatex
-  //  
+  //
   //  The filter is instantiated by invoking the \code{New()} method and
   //  assigning the result to a \doxygen{SmartPointer}.
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  SmoothingFilterType::Pointer smoothing = SmoothingFilterType::New();
+  auto smoothing = SmoothingFilterType::New();
   // Software Guide : EndCodeSnippet
 
 
   //  Software Guide : BeginLatex
-  //  
+  //
   //  The types of the GradientMagnitudeRecursiveGaussianImageFilter and
   //  SigmoidImageFilter are instantiated using the internal
-  //  image type. 
+  //  image type.
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  typedef   itk::GradientMagnitudeRecursiveGaussianImageFilter< 
-                               InternalImageType, 
-                               InternalImageType >  GradientFilterType;
+  using GradientFilterType =
+    itk::GradientMagnitudeRecursiveGaussianImageFilter<InternalImageType,
+                                                       InternalImageType>;
 
-  typedef   itk::SigmoidImageFilter<
-                               InternalImageType, 
-                               InternalImageType >  SigmoidFilterType;
+  using SigmoidFilterType =
+    itk::SigmoidImageFilter<InternalImageType, InternalImageType>;
   // Software Guide : EndCodeSnippet
 
 
   //  Software Guide : BeginLatex
-  //  
+  //
   //  The corresponding filter objects are created with the method
   //  \code{New()}.
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  GradientFilterType::Pointer  gradientMagnitude = GradientFilterType::New();
-  SigmoidFilterType::Pointer sigmoid = SigmoidFilterType::New();
+  auto gradientMagnitude = GradientFilterType::New();
+  auto sigmoid = SigmoidFilterType::New();
   // Software Guide : EndCodeSnippet
 
 
@@ -318,75 +320,73 @@ int main( int argc, char *argv[] )
   //  SigmoidImageFilter are presented in
   //  Section~\ref{sec:IntensityNonLinearMapping}.
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  sigmoid->SetOutputMinimum(  0.0  );
-  sigmoid->SetOutputMaximum(  1.0  );
+  sigmoid->SetOutputMinimum(0.0);
+  sigmoid->SetOutputMaximum(1.0);
   // Software Guide : EndCodeSnippet
 
 
   //  Software Guide : BeginLatex
-  //  
+  //
   //  We now declare the type of the FastMarchingImageFilter that
   //  will be used to generate the initial level set in the form of a distance
   //  map.
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  typedef  itk::FastMarchingImageFilter< InternalImageType, InternalImageType >
-    FastMarchingFilterType;
+  using FastMarchingFilterType =
+    itk::FastMarchingImageFilter<InternalImageType, InternalImageType>;
   // Software Guide : EndCodeSnippet
 
 
   //  Software Guide : BeginLatex
-  //  
+  //
   //  Next we construct one filter of this class using the \code{New()}
   //  method.
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  FastMarchingFilterType::Pointer  fastMarching = FastMarchingFilterType::New();
+  auto fastMarching = FastMarchingFilterType::New();
   // Software Guide : EndCodeSnippet
 
 
   //  Software Guide : BeginLatex
-  //  
+  //
   //  In the following lines we instantiate the type of the
   //  ShapeDetectionLevelSetImageFilter and create an object of this type
   //  using the \code{New()} method.
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  typedef  itk::ShapeDetectionLevelSetImageFilter< InternalImageType, 
-                              InternalImageType >    ShapeDetectionFilterType;
-  ShapeDetectionFilterType::Pointer 
-    shapeDetection = ShapeDetectionFilterType::New();
+  using ShapeDetectionFilterType =
+    itk::ShapeDetectionLevelSetImageFilter<InternalImageType,
+                                           InternalImageType>;
+  auto shapeDetection = ShapeDetectionFilterType::New();
   // Software Guide : EndCodeSnippet
 
 
   //  Software Guide : BeginLatex
-  //  
+  //
   //  The filters are now connected in a pipeline indicated in
   //  Figure~\ref{fig:ShapeDetectionCollaborationDiagram} with the following
-  //  code. 
+  //  code.
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  smoothing->SetInput( reader->GetOutput() );
-  gradientMagnitude->SetInput( smoothing->GetOutput() );
-  sigmoid->SetInput( gradientMagnitude->GetOutput() );
-  
-  shapeDetection->SetInput( fastMarching->GetOutput() );
-  shapeDetection->SetFeatureImage( sigmoid->GetOutput() );
+  smoothing->SetInput(input);
+  gradientMagnitude->SetInput(smoothing->GetOutput());
+  sigmoid->SetInput(gradientMagnitude->GetOutput());
 
-  thresholder->SetInput( shapeDetection->GetOutput() );
+  shapeDetection->SetInput(fastMarching->GetOutput());
+  shapeDetection->SetFeatureImage(sigmoid->GetOutput());
 
-  writer->SetInput( thresholder->GetOutput() );
+  thresholder->SetInput(shapeDetection->GetOutput());
   // Software Guide : EndCodeSnippet
 
 
@@ -398,12 +398,12 @@ int main( int argc, char *argv[] )
   //  noise present in the input image. This filter has been discussed in
   //  Section~\ref{sec:GradientAnisotropicDiffusionImageFilter}.
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  smoothing->SetTimeStep( 0.125 );
-  smoothing->SetNumberOfIterations(  5 );
-  smoothing->SetConductanceParameter( 9.0 );
+  smoothing->SetTimeStep(0.125);
+  smoothing->SetNumberOfIterations(5);
+  smoothing->SetConductanceParameter(9.0);
   // Software Guide : EndCodeSnippet
 
 
@@ -412,17 +412,18 @@ int main( int argc, char *argv[] )
   //  The GradientMagnitudeRecursiveGaussianImageFilter performs the
   //  equivalent of a convolution with a Gaussian kernel followed by a
   //  derivative operator. The sigma of this Gaussian can be used to control
-  //  the range of influence of the image edges. This filter has been discussed
-  //  in Section~\ref{sec:GradientMagnitudeRecursiveGaussianImageFilter}
+  //  the range of influence of the image edges. This filter has been
+  //  discussed in
+  //  Section~\ref{sec:GradientMagnitudeRecursiveGaussianImageFilter}.
   //
   //  \index{itk::Gradient\-Magnitude\-Recursive\-Gaussian\-Image\-Filter!SetSigma()}
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
-  const double sigma = atof( argv[6] );
+  const double sigma = std::stod(argv[6]);
 
   // Software Guide : BeginCodeSnippet
-  gradientMagnitude->SetSigma(  sigma  );
+  gradientMagnitude->SetSigma(sigma);
   // Software Guide : EndCodeSnippet
 
 
@@ -433,17 +434,17 @@ int main( int argc, char *argv[] )
   //  have been discussed in Sections~\ref{sec:IntensityNonLinearMapping} and
   //  \ref{sec:FastMarchingImageFilter}.
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
-  const double alpha =  atof( argv[7] );
-  const double beta  =  atof( argv[8] );
+  const double alpha = std::stod(argv[7]);
+  const double beta = std::stod(argv[8]);
 
   // Software Guide : BeginCodeSnippet
-  sigmoid->SetAlpha( alpha );
-  sigmoid->SetBeta(  beta  );
+  sigmoid->SetAlpha(alpha);
+  sigmoid->SetBeta(beta);
   // Software Guide : EndCodeSnippet
 
-  
+
   //  Software Guide : BeginLatex
   //
   //  The FastMarchingImageFilter requires the user to provide a seed
@@ -463,19 +464,19 @@ int main( int argc, char *argv[] )
   //  \index{itk::FastMarchingImageFilter!NodeContainer}
   //  \index{itk::FastMarchingImageFilter!NodeType}
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   //  Software Guide : BeginCodeSnippet
-  typedef FastMarchingFilterType::NodeContainer           NodeContainer;
-  typedef FastMarchingFilterType::NodeType                NodeType;
-  NodeContainer::Pointer seeds = NodeContainer::New();
-  //  Software Guide : EndCodeSnippet 
-  
+  using NodeContainer = FastMarchingFilterType::NodeContainer;
+  using NodeType = FastMarchingFilterType::NodeType;
+  auto seeds = NodeContainer::New();
+  //  Software Guide : EndCodeSnippet
 
-  InternalImageType::IndexType  seedPosition;
-  
-  seedPosition[0] = atoi( argv[3] );
-  seedPosition[1] = atoi( argv[4] );
+
+  InternalImageType::IndexType seedPosition;
+
+  seedPosition[0] = std::stoi(argv[3]);
+  seedPosition[1] = std::stoi(argv[4]);
 
 
   //  Software Guide : BeginLatex
@@ -493,16 +494,16 @@ int main( int argc, char *argv[] )
   //
   //  \index{itk::FastMarchingImageFilter!Seed initialization}
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
-  const double initialDistance = atof( argv[5] );
+  const double initialDistance = std::stod(argv[5]);
 
   // Software Guide : BeginCodeSnippet
-  NodeType node;
-  const double seedValue = - initialDistance;
-  
-  node.SetValue( seedValue );
-  node.SetIndex( seedPosition );
+  NodeType     node;
+  const double seedValue = -initialDistance;
+
+  node.SetValue(seedValue);
+  node.SetIndex(seedPosition);
   // Software Guide : EndCodeSnippet
 
 
@@ -511,12 +512,12 @@ int main( int argc, char *argv[] )
   //  The list of nodes is initialized and then every node is inserted using
   //  \code{InsertElement()}.
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   //  Software Guide : BeginCodeSnippet
   seeds->Initialize();
-  seeds->InsertElement( 0, node );
-  //  Software Guide : EndCodeSnippet 
+  seeds->InsertElement(0, node);
+  //  Software Guide : EndCodeSnippet
 
 
   //  Software Guide : BeginLatex
@@ -526,71 +527,63 @@ int main( int argc, char *argv[] )
   //
   //  \index{itk::FastMarchingImageFilter!SetTrialPoints()}
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  fastMarching->SetTrialPoints(  seeds  );
+  fastMarching->SetTrialPoints(seeds);
   // Software Guide : EndCodeSnippet
 
 
   //  Software Guide : BeginLatex
-  //  
+  //
   //  Since the FastMarchingImageFilter is used here only as a distance map
   //  generator, it does not require a speed image as input.  Instead, the
   //  constant value $1.0$ is passed using the \code{SetSpeedConstant()}
   //  method.
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   //  Software Guide : BeginCodeSnippet
-  fastMarching->SetSpeedConstant( 1.0 );
-  //  Software Guide : EndCodeSnippet 
+  fastMarching->SetSpeedConstant(1.0);
+  //  Software Guide : EndCodeSnippet
 
 
   //  Here we configure all the writers required to see the intermediate
   //  outputs of the pipeline. This is added here only for
-  //  pedagogical/debugging purposes. These intermediate output are normaly
+  //  pedagogical/debugging purposes. These intermediate output are normally
   //  not required. Only the output of the final thresholding filter should
   //  be relevant.  Observing intermediate output is helpful in the process
   //  of fine tuning the parameters of filters in the pipeline.
   //
-  CastFilterType::Pointer caster1 = CastFilterType::New();
-  CastFilterType::Pointer caster2 = CastFilterType::New();
-  CastFilterType::Pointer caster3 = CastFilterType::New();
-  CastFilterType::Pointer caster4 = CastFilterType::New();
+  auto caster1 = CastFilterType::New();
+  auto caster2 = CastFilterType::New();
+  auto caster3 = CastFilterType::New();
+  auto caster4 = CastFilterType::New();
 
-  WriterType::Pointer writer1 = WriterType::New();
-  WriterType::Pointer writer2 = WriterType::New();
-  WriterType::Pointer writer3 = WriterType::New();
-  WriterType::Pointer writer4 = WriterType::New();
+  const std::string outputImageFilePrefix =
+    itksys::SystemTools::GetFilenameWithoutExtension(outputImageFile);
+  caster1->SetInput(smoothing->GetOutput());
+  caster1->SetOutputMinimum(0);
+  caster1->SetOutputMaximum(255);
+  itk::WriteImage(caster1->GetOutput(),
+                  outputImageFilePrefix + "Smoothing.png");
 
-  caster1->SetInput( smoothing->GetOutput() );
-  writer1->SetInput( caster1->GetOutput() );
-  writer1->SetFileName("ShapeDetectionLevelSetFilterOutput1.png");
-  caster1->SetOutputMinimum(   0 );
-  caster1->SetOutputMaximum( 255 );
-  writer1->Update();
+  caster2->SetInput(gradientMagnitude->GetOutput());
+  caster2->SetOutputMinimum(0);
+  caster2->SetOutputMaximum(255);
+  itk::WriteImage(caster2->GetOutput(),
+                  outputImageFilePrefix + "GradientMagnitude.png");
 
-  caster2->SetInput( gradientMagnitude->GetOutput() );
-  writer2->SetInput( caster2->GetOutput() );
-  writer2->SetFileName("ShapeDetectionLevelSetFilterOutput2.png");
-  caster2->SetOutputMinimum(   0 );
-  caster2->SetOutputMaximum( 255 );
-  writer2->Update();
+  caster3->SetInput(sigmoid->GetOutput());
+  caster3->SetOutputMinimum(0);
+  caster3->SetOutputMaximum(255);
+  itk::WriteImage(caster3->GetOutput(),
+                  outputImageFilePrefix + "Sigmoid.png");
 
-  caster3->SetInput( sigmoid->GetOutput() );
-  writer3->SetInput( caster3->GetOutput() );
-  writer3->SetFileName("ShapeDetectionLevelSetFilterOutput3.png");
-  caster3->SetOutputMinimum(   0 );
-  caster3->SetOutputMaximum( 255 );
-  writer3->Update();
+  caster4->SetInput(fastMarching->GetOutput());
+  caster4->SetOutputMinimum(0);
+  caster4->SetOutputMaximum(255);
 
-  caster4->SetInput( fastMarching->GetOutput() );
-  writer4->SetInput( caster4->GetOutput() );
-  writer4->SetFileName("ShapeDetectionLevelSetFilterOutput4.png");
-  caster4->SetOutputMinimum(   0 );
-  caster4->SetOutputMaximum( 255 );
-  
 
   //  Software Guide : BeginLatex
   //
@@ -601,16 +594,15 @@ int main( int argc, char *argv[] )
   //  only after the \code{Update()} methods of this filter have been called
   //  directly or indirectly.
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  fastMarching->SetOutputSize( 
-           reader->GetOutput()->GetBufferedRegion().GetSize() );
+  fastMarching->SetOutputSize(input->GetBufferedRegion().GetSize());
   // Software Guide : EndCodeSnippet
 
 
   //  Software Guide : BeginLatex
-  //  
+  //
   //  ShapeDetectionLevelSetImageFilter provides two parameters to control
   //  the competition between the propagation or expansion term and the
   //  curvature smoothing term. The methods \code{SetPropagationScaling()}
@@ -627,19 +619,19 @@ int main( int argc, char *argv[] )
   //  \index{itk::Shape\-Detection\-Level\-Set\-Image\-Filter!SetCurvatureScaling()}
   //  \index{itk::Segmentation\-Level\-Set\-Image\-Filter!SetCurvatureScaling()}
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
-  const double curvatureScaling   = atof( argv[  9 ] ); 
-  const double propagationScaling = atof( argv[ 10 ] ); 
+  const double curvatureScaling = std::stod(argv[9]);
+  const double propagationScaling = std::stod(argv[10]);
 
   //  Software Guide : BeginCodeSnippet
-  shapeDetection->SetPropagationScaling(  propagationScaling );
-  shapeDetection->SetCurvatureScaling( curvatureScaling ); 
-  //  Software Guide : EndCodeSnippet 
+  shapeDetection->SetPropagationScaling(propagationScaling);
+  shapeDetection->SetCurvatureScaling(curvatureScaling);
+  //  Software Guide : EndCodeSnippet
 
 
   //  Software Guide : BeginLatex
-  //  
+  //
   //  Once activated, the level set evolution will stop if the convergence
   //  criteria or the maximum number of iterations is reached.  The
   //  convergence criteria are defined in terms of the root mean squared
@@ -657,65 +649,70 @@ int main( int argc, char *argv[] )
   //  \index{itk::Segmentation\-Level\-Set\-Image\-Filter!SetMaximumRMSError()}
   //  \index{itk::Segmentation\-Level\-Set\-Image\-Filter!SetNumberOfIterations()}
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   //  Software Guide : BeginCodeSnippet
-  shapeDetection->SetMaximumRMSError( 0.02 );
-  shapeDetection->SetNumberOfIterations( 800 );
-  //  Software Guide : EndCodeSnippet 
+  shapeDetection->SetMaximumRMSError(0.02);
+  shapeDetection->SetNumberOfIterations(800);
+  //  Software Guide : EndCodeSnippet
 
-  
+
   //  Software Guide : BeginLatex
-  //  
+  //
   //  The invocation of the \code{Update()} method on the writer triggers the
   //  execution of the pipeline.  As usual, the call is placed in a
   //  \code{try/catch} block should any errors occur or exceptions be thrown.
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
   try
-    {
-    writer->Update();
-    }
-  catch( itk::ExceptionObject & excep )
-    {
+  {
+    itk::WriteImage(thresholder->GetOutput(), outputImageFile);
+  }
+  catch (const itk::ExceptionObject & excep)
+  {
     std::cerr << "Exception caught !" << std::endl;
     std::cerr << excep << std::endl;
-    }
+    return EXIT_FAILURE;
+  }
   // Software Guide : EndCodeSnippet
 
-  // Print out some useful information 
+  // Print out some useful information
   std::cout << std::endl;
-  std::cout << "Max. no. iterations: " << shapeDetection->GetNumberOfIterations() << std::endl;
-  std::cout << "Max. RMS error: " << shapeDetection->GetMaximumRMSError() << std::endl;
+  std::cout << "Max. no. iterations: "
+            << shapeDetection->GetNumberOfIterations() << std::endl;
+  std::cout << "Max. RMS error: " << shapeDetection->GetMaximumRMSError()
+            << std::endl;
   std::cout << std::endl;
-  std::cout << "No. elpased iterations: " << shapeDetection->GetElapsedIterations() << std::endl;
+  std::cout << "No. elpased iterations: "
+            << shapeDetection->GetElapsedIterations() << std::endl;
   std::cout << "RMS change: " << shapeDetection->GetRMSChange() << std::endl;
 
-  writer4->Update();
+  itk::WriteImage(caster4->GetOutput(),
+                  outputImageFilePrefix + "FastMarching.png");
 
 
-  // The following writer type is used to save the output of the time-crossing
-  // map in a file with apropiate pixel representation. The advantage of saving
-  // this image in native format is that it can be used with a viewer to help
-  // determine an appropriate threshold to be used on the output of the
-  // fastmarching filter.
+  // The following writer type is used to save the output of the
+  // time-crossing map in a file with appropriate pixel representation. The
+  // advantage of saving this image in native format is that it can be used
+  // with a viewer to help determine an appropriate threshold to be used on
+  // the output of the fastmarching filter.
   //
-  typedef itk::ImageFileWriter< InternalImageType > InternalWriterType;
+  using InternalWriterType = itk::ImageFileWriter<InternalImageType>;
 
-  InternalWriterType::Pointer mapWriter = InternalWriterType::New();
-  mapWriter->SetInput( fastMarching->GetOutput() );
+  auto mapWriter = InternalWriterType::New();
+  mapWriter->SetInput(fastMarching->GetOutput());
   mapWriter->SetFileName("ShapeDetectionLevelSetFilterOutput4.mha");
   mapWriter->Update();
 
-  InternalWriterType::Pointer speedWriter = InternalWriterType::New();
-  speedWriter->SetInput( sigmoid->GetOutput() );
+  auto speedWriter = InternalWriterType::New();
+  speedWriter->SetInput(sigmoid->GetOutput());
   speedWriter->SetFileName("ShapeDetectionLevelSetFilterOutput3.mha");
   speedWriter->Update();
 
-  InternalWriterType::Pointer gradientWriter = InternalWriterType::New();
-  gradientWriter->SetInput( gradientMagnitude->GetOutput() );
+  auto gradientWriter = InternalWriterType::New();
+  gradientWriter->SetInput(gradientMagnitude->GetOutput());
   gradientWriter->SetFileName("ShapeDetectionLevelSetFilterOutput2.mha");
   gradientWriter->Update();
 
@@ -727,20 +724,24 @@ int main( int argc, char *argv[] )
   //  \code{Examples/Data}. We can easily segment the major anatomical
   //  structures by providing seeds in the appropriate locations.
   //  Table~\ref{tab:ShapeDetectionLevelSetFilterOutput} presents the
-  //  parameters used for some structures.  For all of the examples illustrated
-  //  in this table, the propagation scaling was set to $1.0$, and the
-  //  curvature scaling set to 0.05.
+  //  parameters used for some structures.  For all of the examples
+  //  illustrated in this table, the propagation scaling was set to $1.0$, and
+  //  the curvature scaling set to 0.05.
   //
   //  \begin{table}
   //  \begin{center}
   //  \begin{tabular}{|l|c|c|c|c|c|c|}
   //  \hline
-  //  Structure    & Seed Index & Distance & $\sigma$ & $\alpha$ & $\beta$ & Output Image \\ \hline  
-  //  Left Ventricle  & $(81,114)$ & 5.0 & 1.0 & -0.5 & 3.0  & First  in Figure \ref{fig:ShapeDetectionLevelSetFilterOutput2} \\  \hline
-  //  Right Ventricle & $(99,114)$ & 5.0 & 1.0 & -0.5 & 3.0  & Second in Figure \ref{fig:ShapeDetectionLevelSetFilterOutput2} \\  \hline
-  //  White matter    & $(56, 92)$ & 5.0 & 1.0 & -0.3 & 2.0  & Third  in Figure \ref{fig:ShapeDetectionLevelSetFilterOutput2} \\  \hline
-  //  Gray matter     & $(40, 90)$ & 5.0 & 0.5 & -0.3 & 2.0  & Fourth in Figure \ref{fig:ShapeDetectionLevelSetFilterOutput2} \\  \hline
-  //  \end{tabular}
+  //  Structure    & Seed Index & Distance & $\sigma$ & $\alpha$ & $\beta$ &
+  //  Output Image \\ \hline Left Ventricle  & $(81,114)$ & 5.0 & 1.0 & -0.5
+  //  & 3.0  & First  in Figure \ref{fig:ShapeDetectionLevelSetFilterOutput2}
+  //  \\  \hline Right Ventricle &
+  //  $(99,114)$ & 5.0 & 1.0 & -0.5 & 3.0  & Second in Figure
+  //  \ref{fig:ShapeDetectionLevelSetFilterOutput2} \\  \hline White matter &
+  //  $(56, 92)$ & 5.0 & 1.0 & -0.3 & 2.0  & Third  in Figure
+  //  \ref{fig:ShapeDetectionLevelSetFilterOutput2} \\  \hline Gray matter &
+  //  $(40, 90)$ & 5.0 & 0.5 & -0.3 & 2.0  & Fourth in Figure
+  //  \ref{fig:ShapeDetectionLevelSetFilterOutput2} \\  \hline \end{tabular}
   //  \end{center}
   //  \itkcaption[ShapeDetection example parameters]{Parameters used for
   //  segmenting some brain structures shown in
@@ -754,31 +755,32 @@ int main( int argc, char *argv[] )
   //  intermediate outputs of the pipeline illustrated in
   //  Figure~\ref{fig:ShapeDetectionCollaborationDiagram}. They are from left
   //  to right: the output of the anisotropic diffusion filter, the gradient
-  //  magnitude of the smoothed image and the sigmoid of the gradient magnitude
-  //  which is finally used as the edge potential for the
+  //  magnitude of the smoothed image and the sigmoid of the gradient
+  //  magnitude which is finally used as the edge potential for the
   //  ShapeDetectionLevelSetImageFilter.
   //
   //  Notice that in Figure~\ref{fig:ShapeDetectionLevelSetFilterOutput2} the
   //  segmented shapes are rounder than in
-  //  Figure~\ref{fig:FastMarchingImageFilterOutput2} due to the effects of the
-  //  curvature term in the driving equation. As with the previous example,
-  //  segmentation of the gray matter is still problematic.
+  //  Figure~\ref{fig:FastMarchingImageFilterOutput2} due to the effects of
+  //  the curvature term in the driving equation. As with the previous
+  //  example, segmentation of the gray matter is still problematic.
   //
   // \begin{figure} \center
-  // \includegraphics[height=0.40\textheight]{BrainProtonDensitySlice.eps}
-  // \includegraphics[height=0.40\textheight]{ShapeDetectionLevelSetFilterOutput1.eps}
-  // \includegraphics[height=0.40\textheight]{ShapeDetectionLevelSetFilterOutput2.eps}
-  // \includegraphics[height=0.40\textheight]{ShapeDetectionLevelSetFilterOutput3.eps}
-  // \itkcaption[ShapeDetectionLevelSetImageFilter intermediate output]{Images generated by
-  // the segmentation process based on the ShapeDetectionLevelSetImageFilter. From left
-  // to right and top to bottom: input image to be segmented, image smoothed with an
-  // edge-preserving smoothing filter, gradient magnitude of the smoothed
-  // image, sigmoid of the gradient magnitude. This last image, the sigmoid, is
-  // used to compute the speed term for the front propagation.}
+  // \includegraphics[height=0.40\textheight]{BrainProtonDensitySlice}
+  // \includegraphics[height=0.40\textheight]{ShapeDetectionLevelSetFilterOutput1Smoothing}
+  // \includegraphics[height=0.40\textheight]{ShapeDetectionLevelSetFilterOutput1GradientMagnitude}
+  // \includegraphics[height=0.40\textheight]{ShapeDetectionLevelSetFilterOutput1Sigmoid}
+  // \itkcaption[ShapeDetectionLevelSetImageFilter intermediate output]{Images
+  // generated by the segmentation process based on the
+  // ShapeDetectionLevelSetImageFilter. From left to right and top to bottom:
+  // input image to be segmented, image smoothed with an edge-preserving
+  // smoothing filter, gradient magnitude of the smoothed image, sigmoid of
+  // the gradient magnitude. This last image, the sigmoid, is used to compute
+  // the speed term for the front propagation.}
   // \label{fig:ShapeDetectionLevelSetFilterOutput}
   // \end{figure}
   //
-  //  A larger number of iterations is reguired for segmenting large
+  //  A larger number of iterations is required for segmenting large
   //  structures since it takes longer for the front to propagate and cover
   //  the structure. This drawback can be easily mitigated by setting many
   //  seed points in the initialization of the
@@ -788,19 +790,19 @@ int main( int argc, char *argv[] )
   //  structure.
   //
   // \begin{figure} \center
-  // \includegraphics[width=0.24\textwidth]{ShapeDetectionLevelSetFilterOutput5.eps}
-  // \includegraphics[width=0.24\textwidth]{ShapeDetectionLevelSetFilterOutput6.eps}
-  // \includegraphics[width=0.24\textwidth]{ShapeDetectionLevelSetFilterOutput7.eps}
-  // \includegraphics[width=0.24\textwidth]{ShapeDetectionLevelSetFilterOutput8.eps}
-  // \itkcaption[ShapeDetectionLevelSetImageFilter segmentations]{Images generated by the
-  // segmentation process based on the ShapeDetectionLevelSetImageFilter. From left to
-  // right: segmentation of the left ventricle, segmentation of the right
-  // ventricle, segmentation of the white matter, attempt of segmentation of
-  // the gray matter.}
+  // \includegraphics[width=0.24\textwidth]{ShapeDetectionLevelSetFilterOutput1}
+  // \includegraphics[width=0.24\textwidth]{ShapeDetectionLevelSetFilterOutput2}
+  // \includegraphics[width=0.24\textwidth]{ShapeDetectionLevelSetFilterOutput3}
+  // \includegraphics[width=0.24\textwidth]{ShapeDetectionLevelSetFilterOutput4}
+  // \itkcaption[ShapeDetectionLevelSetImageFilter segmentations]{Images
+  // generated by the segmentation process based on the
+  // ShapeDetectionLevelSetImageFilter. From left to right: segmentation of
+  // the left ventricle, segmentation of the right ventricle, segmentation of
+  // the white matter, attempt of segmentation of the gray matter.}
   // \label{fig:ShapeDetectionLevelSetFilterOutput2}
   // \end{figure}
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
-  return 0;
+  return EXIT_SUCCESS;
 }
