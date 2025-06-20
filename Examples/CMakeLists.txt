@@ -1,23 +1,21 @@
-SUBDIRS( 
-  Iterators
-  DataRepresentation
-  Filtering
-  IO
-  Numerics
-  Registration
-  Segmentation
-  SpatialObjects
-)
+if(NOT ITK_BUILD_DEFAULT_MODULES)
+  message(
+    FATAL_ERROR
+    "BUILD_EXAMPLES requires ITK_BUILD_DEFAULT_MODULES to be ON"
+  )
+endif()
 
-IF( ITK_USE_REVIEW )
-  SUBDIRS( Review )
-ENDIF( ITK_USE_REVIEW )
+find_package(ITK REQUIRED)
+include(${ITK_USE_FILE})
 
-IF( NOT ITK_USE_REVIEW_STATISTICS )
-  SUBDIRS( Statistics )
-ENDIF( NOT ITK_USE_REVIEW_STATISTICS )
+set(ITK_TEST_DRIVER itkTestDriver)
 
-IF( ITK_USE_PATENTED )
-  SUBDIRS( Patented )
-ENDIF( ITK_USE_PATENTED )
-
+add_subdirectory(Iterators)
+add_subdirectory(DataRepresentation)
+add_subdirectory(Filtering)
+add_subdirectory(IO)
+add_subdirectory(Numerics)
+add_subdirectory(Segmentation)
+add_subdirectory(SpatialObjects)
+add_subdirectory(Statistics)
+add_subdirectory(RegistrationITKv4)

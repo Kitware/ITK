@@ -1,903 +1,1001 @@
-# This is the root ITK CMakeLists file.
-CMAKE_MINIMUM_REQUIRED(VERSION 2.4)
-IF(COMMAND CMAKE_POLICY)
-  CMAKE_POLICY(SET CMP0003 NEW)
-  CMAKE_POLICY(SET CMP0054 OLD)
-ENDIF(COMMAND CMAKE_POLICY)
+# ==== Define cmake build policies that affect compilation and linkage default behaviors
+#
+# Set the ITK_NEWEST_VALIDATED_POLICIES_VERSION string to the newest cmake version
+# policies that provide successful builds. By setting ITK_NEWEST_VALIDATED_POLICIES_VERSION
+# to a value greater than the oldest policies, all policies between
+# ITK_OLDEST_VALIDATED_POLICIES_VERSION and CMAKE_VERSION (used for this build)
+# are set to their NEW behaivor, thereby suppressing policy warnings related to policies
+# between the ITK_OLDEST_VALIDATED_POLICIES_VERSION and CMAKE_VERSION.
+#
+# CMake versions greater than the ITK_NEWEST_VALIDATED_POLICIES_VERSION policies will
+# continue to generate policy warnings "CMake Warning (dev)...Policy CMP0XXX is not set:"
+#
+set(ITK_OLDEST_VALIDATED_POLICIES_VERSION "3.22.1")
+set(ITK_NEWEST_VALIDATED_POLICIES_VERSION "3.29.0")
+cmake_minimum_required(
+  VERSION
+    ${ITK_OLDEST_VALIDATED_POLICIES_VERSION}...${ITK_NEWEST_VALIDATED_POLICIES_VERSION}
+  FATAL_ERROR
+)
 
-PROJECT(ITK)
-INCLUDE_REGULAR_EXPRESSION("^([Nn]rrd|itk|vtk|vnl|vcl|vxl|v3p|f2c|netlib|ce|itpack|DICOM|meta|png|dbh|tif|jpeg|zlib|gdcm).*$")
-SOURCE_GROUP("XML Files" REGULAR_EXPRESSION "[.]xml$")
+#
+# Now enumerate specific policies newer than ITK_NEWEST_VALIDATED_POLICIES_VERSION
+# that may need to be individually set to NEW/OLD
+#
+foreach(pnew)
+  if(POLICY ${pnew})
+    cmake_policy(SET ${pnew} NEW)
+  endif()
+endforeach()
+foreach(pold "")
+  if(POLICY ${pold})
+    cmake_policy(SET ${pold} OLD)
+  endif()
+endforeach()
 
-# On Visual Studio 8 MS deprecated C. This removes all 1.276E1265 security
-# warnings
-IF(WIN32)
-  IF(NOT BORLAND)
-    IF(NOT CYGWIN)
-      IF(NOT MINGW)
-        IF(NOT ITK_ENABLE_VISUAL_STUDIO_DEPRECATED_C_WARNINGS)
-          ADD_DEFINITIONS(
-            -D_CRT_FAR_MAPPINGS_NO_DEPRECATE
-            -D_CRT_IS_WCTYPE_NO_DEPRECATE
-            -D_CRT_MANAGED_FP_NO_DEPRECATE
-            -D_CRT_NONSTDC_NO_DEPRECATE
-            -D_CRT_SECURE_NO_DEPRECATE
-            -D_CRT_SECURE_NO_DEPRECATE_GLOBALS
-            -D_CRT_SETERRORMODE_BEEP_SLEEP_NO_DEPRECATE
-            -D_CRT_TIME_FUNCTIONS_NO_DEPRECATE
-            -D_CRT_VCCLRIT_NO_DEPRECATE
-            -D_SCL_SECURE_NO_DEPRECATE
-            )
-        ENDIF(NOT ITK_ENABLE_VISUAL_STUDIO_DEPRECATED_C_WARNINGS)
-      ENDIF(NOT MINGW)
-    ENDIF(NOT CYGWIN)
-  ENDIF(NOT BORLAND)
-ENDIF(WIN32)
+# ====
+include(${CMAKE_CURRENT_SOURCE_DIR}/CMake/ITKInitializeCXXStandard.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/CMake/ITKInitializeBuildType.cmake)
 
-# Visual Studio 2012 and later forbid macro-izing keywords (C4005 & C1189)
-IF (MSVC)
-  IF(NOT (MSVC_VERSION LESS 1700))
-    ADD_DEFINITIONS(-D_ALLOW_KEYWORD_MACROS)
-  ENDIF(NOT (MSVC_VERSION LESS 1700))
-ENDIF(MSVC)
+# ==== Define language standard configurations requiring at least c++17 standard
+if(CMAKE_CXX_STANDARD EQUAL "98" OR CMAKE_CXX_STANDARD LESS "17")
+  message(
+    FATAL_ERROR
+    "C++98 to C++14 are no longer supported in ITK version 5.4 and greater."
+  )
+endif()
 
-# If CMake is the version we're expecting, don't show the
-# CMAKE_BACKWARDS_COMPATIBILITY option. If the version is higher than the
-# minimal version required, then show the backward compatibility option.
-IF("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" MATCHES "^2\\.4$")
-  MARK_AS_ADVANCED(FORCE CMAKE_BACKWARDS_COMPATIBILITY)
-ELSE("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" MATCHES "^2\\.4$")
-  MARK_AS_ADVANCED(CLEAR CMAKE_BACKWARDS_COMPATIBILITY)
-ENDIF("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" MATCHES "^2\\.4$")
+set(
+  CMAKE_MODULE_PATH
+  ${CMAKE_CURRENT_SOURCE_DIR}/CMake
+  ${CMAKE_MODULE_PATH}
+)
+
+include(itkVersion)
+set(
+  ITK_VERSION
+  "${ITK_VERSION_MAJOR}.${ITK_VERSION_MINOR}.${ITK_VERSION_PATCH}"
+)
+project(
+  ITK
+  VERSION ${ITK_VERSION}
+  DESCRIPTION
+    "The Insight Toolkit (ITK) is an open-source, cross-platform toolkit for N-dimensional scientific image processing, segmentation, and registration."
+  HOMEPAGE_URL "https://itk.org"
+  LANGUAGES
+    CXX
+    C
+)
+
+set(ITK_CMAKE_DIR "${ITK_SOURCE_DIR}/CMake")
+
+if(APPLE)
+  include(itkApple)
+endif()
+
+include(itkCompilerChecks)
+include(itkSupportMacros)
+
+# Configure CMake variables that will be used in the module macros
+# ITK_USE_FILE is used when a remote module includes an example directory
+# that can be configured as an independent project.
+set(ITK_CONFIG_CMAKE_DIR "${ITK_SOURCE_DIR}/CMake")
+set(ITK_USE_FILE "${ITK_CONFIG_CMAKE_DIR}/UseITK.cmake")
+# ITKInternalConfig.cmake is used to handle find_package(ITK) calls. This is useful
+# to remote module examples which are set up as independent projects that can be copied
+# outside of their original project and used without any modification.
+configure_file(
+  CMake/ITKInternalConfig.cmake
+  ${ITK_BINARY_DIR}/CMakeTmp/ITKConfig.cmake
+  COPYONLY
+)
+
+include(CMakeDependentOption)
+#
+# use ExternalProject
+include(ExternalProject)
+
+if(CMAKE_HOST_WIN32)
+  if(NOT DEFINED ITK_SKIP_PATH_LENGTH_CHECKS)
+    if(${CMAKE_SYSTEM_VERSION} VERSION_GREATER "10.0.14392") # Win10 version 1607
+      set(_LongPathKey LongPathsEnabled)
+      execute_process(
+        COMMAND
+          reg query HKLM\\SYSTEM\\CurrentControlSet\\Control\\FileSystem /v
+          ${_LongPathKey}
+        OUTPUT_VARIABLE _output
+      )
+      string(
+        REGEX
+        MATCH
+        "${_LongPathKey}.*REG_DWORD.*[0-9]x([0-9])"
+        _regex
+        ${_output}
+      )
+      if(${CMAKE_MATCH_1})
+        set(
+          ITK_SKIP_PATH_LENGTH_CHECKS
+          0
+          CACHE BOOL
+          "Skips max path length checks. These checks can be disabled for Windows version 10.0.14393 and later if registry key HKLM\\SYSTEM\\CurrentControlSet\\Control\\FileSystem\\LongPathsEnabled is set to 1 and all tools support long paths. As of January 2018, MSBuild and Visual Studio do not support it yet."
+        )
+      endif()
+    endif()
+  endif()
+endif()
+
+if(CMAKE_HOST_WIN32 AND NOT ITK_SKIP_PATH_LENGTH_CHECKS)
+  string(LENGTH "${CMAKE_CURRENT_SOURCE_DIR}" n)
+  if(n GREATER 50)
+    message(
+      FATAL_ERROR
+      "ITK source code directory path length is too long (${n} > 50)."
+      "Please move the ITK source code directory to a directory with a shorter path."
+    )
+  endif()
+
+  string(LENGTH "${CMAKE_CURRENT_BINARY_DIR}" n)
+  if(n GREATER 50)
+    message(
+      FATAL_ERROR
+      "ITK build directory path length is too long (${n} > 50)."
+      "Please set the ITK build directory to a directory with a shorter path."
+    )
+  endif()
+endif()
 
 #-----------------------------------------------------------------------------
-# ITK version number.  An even minor number corresponds to releases.
-SET(ITK_VERSION_MAJOR "3")
-SET(ITK_VERSION_MINOR "20")
-SET(ITK_VERSION_PATCH "1")
+if(NOT EXISTS "${ITK_SOURCE_DIR}/.ExternalData/README.rst")
+  # This file is always present in version-controlled source trees
+  # so we must have been extracted from a source tarball with no
+  # data objects needed for testing.  Turn off tests by default
+  # since enabling them requires network access or manual data
+  # store configuration.
+  option(BUILD_TESTING "Build the testing tree." OFF)
+endif()
+include(CTest)
+mark_as_advanced(CLEAR BUILD_TESTING)
 
-# Version string should not include patch level.  The major.minor is
-# enough to distinguish available features of the toolkit.
-SET(ITK_VERSION_STRING "${ITK_VERSION_MAJOR}.${ITK_VERSION_MINOR}")
+if(MSVC) #-- Configure MSVC_STATIC_RUNTIME only if using MSVC environment
+  option(
+    ITK_MSVC_STATIC_RUNTIME_LIBRARY
+    "Link to MSVC's static CRT (/MT and /MTd).
+OFF (default) means link to regular, dynamic CRT (/MD and /MDd)."
+    OFF
+  )
+  mark_as_advanced(ITK_MSVC_STATIC_RUNTIME_LIBRARY)
+  set(ITK_MSVC_STATIC_CRT ${ITK_MSVC_STATIC_RUNTIME_LIBRARY})
+  if(ITK_MSVC_STATIC_RUNTIME_LIBRARY)
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+    message(STATUS "Using MSVC's static CRT (/MT and /MTd)")
+  else()
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
+    message(STATUS "Using MSVC's dynamic CRT (/MD and /MDd)")
+  endif()
+endif()
 
-#-----------------------------------------------------------------------------
-# Load some macros.
-INCLUDE(${ITK_SOURCE_DIR}/Utilities/itkThirdParty.cmake)
+include(ITKDownloadSetup)
+include(PreventInSourceBuilds)
+include(PreventInBuildInstalls)
+include(ITKModuleMacros)
+include(ITKExternalData)
+include(ITKModuleTest)
+include(itkCheckSourceTree)
 
-#-----------------------------------------------------------------------------
-# Test for some required system information.
-INCLUDE (${CMAKE_ROOT}/Modules/CMakeBackwardCompatibilityC.cmake)
-INCLUDE (${CMAKE_ROOT}/Modules/CMakeBackwardCompatibilityCXX.cmake)
-
-#-----------------------------------------------------------------------------
-# Configure Dart testing support.  This should be done before any
-# MESSAGE(FATAL_ERROR ...) commands are invoked.
-INCLUDE(${CMAKE_ROOT}/Modules/Dart.cmake)
-FIND_PACKAGE(Tclsh)
-MARK_AS_ADVANCED(TCL_TCLSH DART_ROOT)
-ENABLE_TESTING()
-IF(BUILD_TESTING)
-  CONFIGURE_FILE(${ITK_SOURCE_DIR}/CMake/RemoveTemporaryFiles.cmake.in
-    ${ITK_BINARY_DIR}/CMake/RemoveTemporaryFiles.cmake @ONLY IMMEDIATE)
-  CONFIGURE_FILE(${ITK_SOURCE_DIR}/CMake/itkSampleBuildTest.cmake.in
-    ${ITK_BINARY_DIR}/CMake/itkSampleBuildTest.cmake @ONLY)
-  CONFIGURE_FILE(${ITK_SOURCE_DIR}/CMake/CTestCustom.ctest.in
-    ${ITK_BINARY_DIR}/CMake/CTestCustom.ctest @ONLY)
-  CONFIGURE_FILE(${ITK_SOURCE_DIR}/CMake/CTestCustom.ctest.in
-    ${ITK_BINARY_DIR}/Testing/Code/Common/CTestCustom.ctest @ONLY)
-  FILE(WRITE ${ITK_BINARY_DIR}/CTestCustom.cmake
-    "INCLUDE(\"${ITK_BINARY_DIR}/CMake/CTestCustom.ctest\")\n")
-
-  CONFIGURE_FILE(${ITK_SOURCE_DIR}/InsightLogo.gif
-                 ${ITK_BINARY_DIR}/Testing/HTML/TestingResults/Icons/Logo.gif
-                 COPYONLY IMMEDIATE)
-  SET(BUILDNAME "${BUILDNAME}" CACHE STRING "Name of build on the dashboard")
-  MARK_AS_ADVANCED(BUILDNAME)
-ENDIF(BUILD_TESTING)
+set(main_project_name ${_ITKModuleMacros_DEFAULT_LABEL})
 
 #-----------------------------------------------------------------------------
-# Output directories.
-IF(NOT LIBRARY_OUTPUT_PATH)
-  SET (LIBRARY_OUTPUT_PATH ${ITK_BINARY_DIR}/bin CACHE INTERNAL "Single output directory for building all libraries.")
-ENDIF(NOT LIBRARY_OUTPUT_PATH)
-IF(NOT EXECUTABLE_OUTPUT_PATH)
-  SET (EXECUTABLE_OUTPUT_PATH ${ITK_BINARY_DIR}/bin CACHE INTERNAL "Single output directory for building all executables.")
-ENDIF(NOT EXECUTABLE_OUTPUT_PATH)
-MARK_AS_ADVANCED(LIBRARY_OUTPUT_PATH EXECUTABLE_OUTPUT_PATH)
+configure_file(CMake/ITKConfigVersion.cmake.in ITKConfigVersion.cmake @ONLY)
 
-SET(ITK_LIBRARY_PATH "${LIBRARY_OUTPUT_PATH}")
-SET(ITK_EXECUTABLE_PATH "${EXECUTABLE_OUTPUT_PATH}")
-SET(CXX_TEST_PATH ${EXECUTABLE_OUTPUT_PATH})
+if(NOT CMAKE_INSTALL_LIBDIR)
+  set(CMAKE_INSTALL_LIBDIR lib)
+endif()
 
-SET(CMAKE_MODULE_PATH ${ITK_SOURCE_DIR}/CMake)
-# Deal with FFT v3 Options
-MARK_AS_ADVANCED(USE_FFTWD)
-OPTION(USE_FFTWD "Use double precision FFTW if found" OFF)
-MARK_AS_ADVANCED(USE_FFTWF)
-OPTION(USE_FFTWF "Use single precision FFTW if found" OFF)
-IF( USE_FFTWD OR USE_FFTWF )
-  SET(msg "ATTENTION: You have enabled the use of FFTW,")
-  SET(msg "${msg} this library is distributed under a GPL license.")
-  SET(msg "${msg} By enabling this option, the binary of the ITK libraries")
-  SET(msg "${msg} that you are going to build will be covered by a GPL license,")
-  SET(msg "${msg} and so it will be any executable that you link against these libraries.")
-  MESSAGE("${msg}")
-  FIND_PACKAGE( FFTW )
-ENDIF( USE_FFTWD OR USE_FFTWF )
+if(NOT ITK_INSTALL_RUNTIME_DIR)
+  set(ITK_INSTALL_RUNTIME_DIR bin)
+endif()
+if(NOT ITK_INSTALL_LIBRARY_DIR)
+  set(ITK_INSTALL_LIBRARY_DIR ${CMAKE_INSTALL_LIBDIR})
+endif()
+if(NOT ITK_INSTALL_ARCHIVE_DIR)
+  set(ITK_INSTALL_ARCHIVE_DIR ${CMAKE_INSTALL_LIBDIR})
+endif()
+if(NOT ITK_INSTALL_INCLUDE_DIR)
+  set(
+    ITK_INSTALL_INCLUDE_DIR
+    include/ITK-${ITK_VERSION_MAJOR}.${ITK_VERSION_MINOR}
+  )
+endif()
+if(NOT ITK_INSTALL_DATA_DIR)
+  set(ITK_INSTALL_DATA_DIR share/ITK-${ITK_VERSION_MAJOR}.${ITK_VERSION_MINOR})
+endif()
+if(NOT ITK_INSTALL_DOC_DIR)
+  set(
+    ITK_INSTALL_DOC_DIR
+    share/doc/ITK-${ITK_VERSION_MAJOR}.${ITK_VERSION_MINOR}
+  )
+endif()
+if(NOT ITK_INSTALL_PACKAGE_DIR)
+  set(
+    ITK_INSTALL_PACKAGE_DIR
+    "${CMAKE_INSTALL_LIBDIR}/cmake/ITK-${ITK_VERSION_MAJOR}.${ITK_VERSION_MINOR}"
+  )
+endif()
 
-# Deal with SGI SCSL Options
-OPTION(USE_SCSL "Use the SGI SCSL High Performance Computing math library" OFF)
-MARK_AS_ADVANCED(USE_SCSL)
-IF( USE_SCSL )
-    FIND_PACKAGE( SCSL )
-ENDIF( USE_SCSL )
+# Override CMake's built-in add_* commands: assign LABELS to tests and targets
+# automatically. Depends on the CMake variable itk-module being set to the
+# "current" module when add_* is called.
+macro(verify_itk_module_is_set)
+  if("" STREQUAL "${itk-module}")
+    message(FATAL_ERROR "CMake variable itk-module is not set")
+  endif()
+endmacro()
 
-# Deal with MINC2 options
-MARK_AS_ADVANCED(ITK_USE_MINC2)
-OPTION(ITK_USE_MINC2 "Use MINC2 File Format" OFF)
-IF( ITK_USE_MINC2 )
-  FIND_PACKAGE( MINC2 )
-  IF( NOT MINC2_FOUND )
-    MESSAGE("You requested to use MINC2 but some components are missing")
-  ENDIF( NOT MINC2_FOUND )
-ENDIF( ITK_USE_MINC2 )
+#-----------------------------------------------------------------------------
+# Do we try to use system libraries by default?
+option(
+  ITK_USE_SYSTEM_LIBRARIES
+  "Use the system's libraries by default.
+If this is not set during the initial configuration, it will have no effect."
+  OFF
+)
+mark_as_advanced(ITK_USE_SYSTEM_LIBRARIES)
 
+#-----------------------------------------------------------------------------
+# Enable the download and use of BrainWeb datasets.
+# When this data is available, additional 3D tests are enabled.
+option(
+  ITK_USE_BRAINWEB_DATA
+  "Download and use BrainWeb data for advanced testing"
+  OFF
+)
+mark_as_advanced(ITK_USE_BRAINWEB_DATA)
+if(ITK_BRAINWEB_DATA_ROOT)
+  message(
+    WARNING
+    "ITK_BRAINWEB_DATA_ROOT is not longer supported!"
+    "Please update to ITK_USE_BRAINWEB_DATA."
+  )
+endif()
+
+#-----------------------------------------------------------------------------
+# CMAKE_C_COMPILER_ARG1 is a CMake internal variable. It should not be used
+# in ITK's configuration. If it is set, it most likely means that
+# a developer is configuring ITK to be built with a launcher such as ccache
+# or distcc. This should be done with the CMake variable
+# CMAKE_C_COMPILER_LAUNCHER_FLAG.
+if(CMAKE_C_COMPILER_ARG1)
+  message(
+    WARNING
+    "The CMake variable CMAKE_C_COMPILER_ARG1 is set. This most\
+  likely mean that the developer is trying to use ccache or distcc. The CMake\
+  variable CMAKE_C_COMPILER_LAUNCHER_FLAG should be used instead."
+  )
+endif()
 
 #-----------------------------------------------------------------------------
 # ITK build configuration options.
-OPTION(BUILD_SHARED_LIBS "Build ITK with shared libraries." OFF)
-SET(ITK_BUILD_SHARED_LIBS ${BUILD_SHARED_LIBS})
+option(BUILD_SHARED_LIBS "Build ITK with shared libraries." OFF)
+set(ITK_BUILD_SHARED_LIBS ${BUILD_SHARED_LIBS})
 
-IF(NOT ITK_NO_LIBRARY_VERSION)
-  # This setting of SOVERSION assumes that any API change
-  # will increment either the minor or major version number of ITK.
-  SET(ITK_LIBRARY_PROPERTIES 
-      VERSION   "${ITK_VERSION_MAJOR}.${ITK_VERSION_MINOR}.${ITK_VERSION_PATCH}"
-      SOVERSION "${ITK_VERSION_MAJOR}.${ITK_VERSION_MINOR}"
-     )
-ENDIF(NOT ITK_NO_LIBRARY_VERSION)
+set(ITK_DYNAMIC_LOADING_DEFAULT ON)
+if(WASI OR EMSCRIPTEN)
+  set(ITK_DYNAMIC_LOADING_DEFAULT OFF)
+endif()
+option(
+  ITK_DYNAMIC_LOADING
+  "Support run-time loading of shared libraries"
+  ${ITK_DYNAMIC_LOADING_DEFAULT}
+)
+mark_as_advanced(ITK_DYNAMIC_LOADING)
+
+#-----------------------------------------------------------------------------
+# Wrapping options
+include(Wrapping/CMakeUtilityFunctions.cmake)
+include(Wrapping/WrappingOptions.cmake)
+include(ITKSetStandardCompilerFlags)
+#---------------------------------------------------------------
+
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${ITK_REQUIRED_C_FLAGS}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${ITK_REQUIRED_CXX_FLAGS}")
+set(
+  CMAKE_EXE_LINKER_FLAGS
+  "${CMAKE_EXE_LINKER_FLAGS} ${ITK_REQUIRED_LINK_FLAGS}"
+)
+set(
+  CMAKE_SHARED_LINKER_FLAGS
+  "${CMAKE_SHARED_LINKER_FLAGS} ${ITK_REQUIRED_LINK_FLAGS}"
+)
+set(
+  CMAKE_MODULE_LINKER_FLAGS
+  "${CMAKE_MODULE_LINKER_FLAGS} ${ITK_REQUIRED_LINK_FLAGS}"
+)
+if(NOT CMAKE_POSITION_INDEPENDENT_CODE)
+  set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+endif()
+# Because GoogleTest sets CMAKE_DEBUG_POSTFIX CMake CACHE variable to "d" when it is
+# built in debug, we preemptively set it to an empty string to avoid having a postfix
+# added to the ITK library names.
+set(
+  CMAKE_DEBUG_POSTFIX
+  ""
+  CACHE STRING
+  "Generate debug library name with a postfix."
+)
+mark_as_advanced(CMAKE_DEBUG_POSTFIX)
+
+# Configure find_package behavior
+if(NOT DEFINED CMAKE_FIND_USE_PACKAGE_REGISTRY)
+  set(CMAKE_FIND_USE_PACKAGE_REGISTRY 0)
+endif()
+
+# Setup build locations for shared libraries ----START
+#     ITK/CMakeLists.txt -- use ITK_BINARY_DIR as root
+#     ITK/CMake/ITKModuleExternal.cmake -- use ITK_DIR as root
+#
+# The default path when not wrapping.  Restore standard build location
+# if python wrapping is turned on, and then turned off.
+if(NOT CMAKE_LIBRARY_OUTPUT_DIRECTORY)
+  set(
+    NO_WRAP_CMAKE_LIBRARY_OUTPUT_DIRECTORY
+    ${ITK_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR}
+    CACHE PATH
+    "Shared library directory"
+  )
+else()
+  set(
+    NO_WRAP_CMAKE_LIBRARY_OUTPUT_DIRECTORY
+    ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}
+    CACHE PATH
+    "Shared library directory"
+  )
+endif()
+if(NOT CMAKE_RUNTIME_OUTPUT_DIRECTORY)
+  set(
+    NO_WRAP_CMAKE_RUNTIME_OUTPUT_DIRECTORY
+    ${ITK_BINARY_DIR}/bin
+    CACHE PATH
+    "Shared library directory"
+  )
+else()
+  set(
+    NO_WRAP_CMAKE_RUNTIME_OUTPUT_DIRECTORY
+    ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
+    CACHE PATH
+    "Shared library directory"
+  )
+endif()
+
+include(WrappingConfigCommon)
+# Setup build locations for shared libraries ----STOP
+
+if(CMAKE_CONFIGURATION_TYPES AND ITK_WRAPPING)
+  add_custom_target(
+    remove_all_wrapped_libs
+    COMMAND
+      ${CMAKE_COMMAND} -E rm -rf ${ITK_PYTHON_PACKAGE_DIR}/*.so
+      ${ITK_PYTHON_PACKAGE_DIR}/*.dylib ${ITK_PYTHON_PACKAGE_DIR}/*.dll
+    WORKING_DIRECTORY ${ITK_BINARY_DIR}
+    COMMENT
+      "A convenience target to cleanup library directories when
+    switching between ITK_WRAP/nowrap, or between configs
+    in a multi-config build."
+  )
+endif()
+
+if(NOT CMAKE_ARCHIVE_OUTPUT_DIRECTORY)
+  set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${ITK_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR})
+endif()
+set(ITK_MODULES_DIR "${ITK_BINARY_DIR}/${ITK_INSTALL_PACKAGE_DIR}/Modules")
 
 #-----------------------------------------------------------------------------
 # Provide compatibility options.
-OPTION(ITK_LEGACY_REMOVE "Remove all legacy code completely." OFF)
-OPTION(ITK_LEGACY_SILENT "Silence all legacy code messages." OFF)
-MARK_AS_ADVANCED(ITK_LEGACY_REMOVE ITK_LEGACY_SILENT)
+# During major release updates deprecated interface may be needed for backwards compatibility
+cmake_dependent_option(
+  ITK_LEGACY_REMOVE
+  "Remove current legacy code completely."
+  OFF
+  "NOT ITK_WRAPPING"
+  ON
+)
 
-SET(GDCM_LEGACY_SILENT ${ITK_LEGACY_SILENT})
+# During minor releases bugs may be identified that identify broken interface, or
+# useless interfaces that need to be retained to not break backwards compatibilty.
+# These ITK_FUTURE_LEGACY_REMOVE are another level of granularity for
+# which backwards compatible features we want to maintain.
+cmake_dependent_option(
+  ITK_FUTURE_LEGACY_REMOVE
+  "Completely remove compilation of code which will become deprecated by default in ITKv6."
+  OFF
+  "ITK_LEGACY_REMOVE"
+  OFF
+)
+cmake_dependent_option(
+  ITK_LEGACY_SILENT
+  "Silence all legacy code messages when ITK_LEGACY_REMOVE:BOOL=OFF."
+  OFF
+  "NOT ITK_LEGACY_REMOVE"
+  OFF
+)
 
-#-----------------------------------------------------------------------------
-# ITK build patented algorithms
-OPTION(ITK_USE_PATENTED "Build algorithms that are covered with Patents. It is YOUR responsibility to obtain a license from the patent holder in order to use these methods." OFF)
-MARK_AS_ADVANCED(ITK_USE_PATENTED)
+mark_as_advanced(
+  ITK_LEGACY_SILENT
+  ITK_LEGACY_REMOVE
+  ITK_FUTURE_LEGACY_REMOVE
+)
+
+if(ITKV4_COMPATIBILITY)
+  message(
+    FATAL_ERROR
+    "ITKV4_COMPATIBILITY is removed starting in ITK version 6.0, this option is no longer valid."
+  )
+endif()
+
+if(ITKV3_COMPATIBILITY)
+  message(
+    FATAL_ERROR
+    "ITKV3_COMPATIBILITY is removed starting in ITK version 5.0, this option is no longer valid."
+  )
+endif()
+
+# Chose flavour of Analyze reader
+set(
+  ITK_NIFTI_IO_ANALYZE_FLAVOR_DOC_STRING
+  "Which flavour of Analyze reader to use by default"
+)
+
+set(
+  ITK_NIFTI_IO_ANALYZE_FLAVOR
+  "ITK4Warning"
+  CACHE STRING
+  ${ITK_NIFTI_IO_ANALYZE_FLAVOR_DOC_STRING}
+)
+
+set_property(
+  CACHE
+    ITK_NIFTI_IO_ANALYZE_FLAVOR
+  PROPERTY
+    STRINGS
+      ITK4Warning
+      ITK4
+      SPM
+      FSL
+      Reject
+)
+
+if(
+  NOT
+    (
+      "${ITK_NIFTI_IO_ANALYZE_FLAVOR}"
+        STREQUAL
+        "ITK4Warning"
+      OR
+        "${ITK_NIFTI_IO_ANALYZE_FLAVOR}"
+          STREQUAL
+          "ITK4"
+      OR
+        "${ITK_NIFTI_IO_ANALYZE_FLAVOR}"
+          STREQUAL
+          "SPM"
+      OR
+        "${ITK_NIFTI_IO_ANALYZE_FLAVOR}"
+          STREQUAL
+          "FSL"
+      OR
+        "${ITK_NIFTI_IO_ANALYZE_FLAVOR}"
+          STREQUAL
+          "Reject"
+    )
+)
+  set(
+    ITK_NIFTI_IO_ANALYZE_FLAVOR
+    "ITK4Warning"
+    CACHE STRING
+    ${ITK_NIFTI_IO_ANALYZE_FLAVOR_DOC_STRING}
+    FORCE
+  )
+endif()
+mark_as_advanced(ITK_NIFTI_IO_ANALYZE_FLAVOR)
+
+# Allow non-orthogonal rotation matrix approximation in NIFTI files
+option(
+  ITK_NIFTI_IO_SFORM_PERMISSIVE_DEFAULT
+  "Allow non-orthogonal rotation matrix in NIFTI sform by default"
+  OFF
+)
+mark_as_advanced(ITK_NIFTI_IO_SFORM_PERMISSIVE_DEFAULT)
 
 #-----------------------------------------------------------------------------
 # ITK build classes that are in the review process
-OPTION(ITK_USE_REVIEW "Build algorithms that are candidates to be included in the Toolkit. This classes are not covered by the Backward Compatibility Policy, nor the Copyright Policy of ITK." OFF)
-MARK_AS_ADVANCED(ITK_USE_REVIEW)
+# ITK_USE_REVIEW is deprecated, only kept for backward compatibility
+if(ITK_USE_REVIEW AND NOT Module_ITKReview)
+  message(
+    WARNING
+    "ITK_USE_REVIEW is deprecated, please use Module_ITKReview to turn Review module ON/OFF"
+  )
+  set(
+    Module_ITKReview
+    ON
+    CACHE BOOL
+    "Module containing code from the Review directory of ITKv4."
+    FORCE
+  )
+endif()
 
 #-----------------------------------------------------------------------------
 # ITK uses KWStyle for checking the coding style
-INCLUDE(${ITK_SOURCE_DIR}/Utilities/KWStyle/KWStyle.cmake)
+include(${ITK_SOURCE_DIR}/Utilities/KWStyle/KWStyle.cmake)
 
 #-----------------------------------------------------------------------------
+# Build the Examples that are illustrated in the Software Guide.
+option(BUILD_EXAMPLES "Build the examples from the ITK Software Guide." OFF)
+
+#-----------------------------------------------------------------------------
+# Enable GPU support. Requires OpenCL to be installed
+option(ITK_USE_GPU "GPU acceleration via OpenCL" OFF)
+mark_as_advanced(ITK_USE_GPU)
+
+if(ITK_USE_GPU)
+  include(itkOpenCL)
+endif()
+
+#-----------------------------------------------------------------------------
+# Manage FFT v3 Options
+#
+option(
+  ITK_USE_MKL
+  "Use system Intel Math Kernel Library (MKL) for FFT computation."
+  OFF
+)
+mark_as_advanced(ITK_USE_MKL)
+if(ITK_USE_MKL)
+  # The following lines are only useful if one sets `ITK_USE_MKL` to ON in
+  # the command line. Otherwise, the first CMake run will always initialize
+  # these variables to false. The error message will help the user to set
+  # the appropriate values.
+  set(ITK_USE_FFTWD ON CACHE BOOL "Use double precision FFTW if found")
+  set(ITK_USE_FFTWF ON CACHE BOOL "Use single precision FFTW if found")
+  set(ITK_USE_SYSTEM_FFTW ON CACHE BOOL "Use an installed version of FFTW")
+  if(NOT ITK_USE_FFTWD OR NOT ITK_USE_FFTWF OR NOT ITK_USE_SYSTEM_FFTW)
+    message(
+      FATAL_ERROR
+      "ITK_USE_MKL is set to ON. ITK_USE_FFTWD, ITK_USE_FFTWF\
+ and ITK_USE_SYSTEM_FFTW must be set to ON, too."
+    )
+  endif()
+endif()
+option(
+  ITK_USE_CUFFTW
+  "Use NVidia CUDA cuFFT with its FFTW interface for FFT computation."
+  OFF
+)
+mark_as_advanced(ITK_USE_CUFFTW)
+if(ITK_USE_CUFFTW)
+  # The following lines are only useful if one sets `ITK_USE_CUFFTW` to ON in
+  # the command line. Otherwise, the first CMake run will always initialize
+  # these variables to false. The error message will help the user to set
+  # the appropriate values.
+  set(ITK_USE_FFTWD ON CACHE BOOL "Use double precision FFTW if found")
+  set(ITK_USE_FFTWF ON CACHE BOOL "Use single precision FFTW if found")
+  set(ITK_USE_SYSTEM_FFTW ON CACHE BOOL "Use an installed version of FFTW")
+  if(NOT ITK_USE_FFTWD OR NOT ITK_USE_FFTWF OR NOT ITK_USE_SYSTEM_FFTW)
+    message(
+      FATAL_ERROR
+      "ITK_USE_CUFFTW is set to ON. ITK_USE_FFTWD, ITK_USE_FFTWF\
+ and ITK_USE_SYSTEM_FFTW must be set to ON, too."
+    )
+  endif()
+endif()
+# ITK_USE_FFTWD -- use double precision FFTW
+if(DEFINED USE_FFTWD)
+  set(ITK_USE_FFTWD_DEFAULT ${USE_FFTWD})
+else()
+  set(ITK_USE_FFTWD_DEFAULT OFF)
+endif()
+option(
+  ITK_USE_FFTWD
+  "Use double precision FFTW if found"
+  ${ITK_USE_FFTWD_DEFAULT}
+)
+mark_as_advanced(ITK_USE_FFTWD)
+#
+# ITK_USE_FFTWF -- use single precision FFTW
+if(DEFINED USE_FFTWF)
+  set(ITK_USE_FFTWF_DEFAULT ${USE_FFTWF})
+else()
+  set(ITK_USE_FFTWF_DEFAULT OFF)
+endif()
+option(
+  ITK_USE_FFTWF
+  "Use single precision FFTW if found"
+  ${ITK_USE_FFTWF_DEFAULT}
+)
+mark_as_advanced(ITK_USE_FFTWF)
+
+# ITK_USE_SYSTEM_FFTW -- locate a readybuilt FFTW installation
+if(DEFINED USE_SYSTEM_FFTW)
+  set(ITK_USE_SYSTEM_FFTW_DEFAULT ${USE_SYSTEM_FFTW})
+else()
+  set(ITK_USE_SYSTEM_FFTW_DEFAULT ${ITK_USE_SYSTEM_LIBRARIES})
+endif()
+option(
+  ITK_USE_SYSTEM_FFTW
+  "Use an installed version of FFTW"
+  ${ITK_USE_SYSTEM_FFTW_DEFAULT}
+)
+mark_as_advanced(ITK_USE_SYSTEM_FFTW)
+
+if(ITK_USE_FFTWD OR ITK_USE_FFTWF)
+  include(itkExternal_FFTW)
+  # This pollutes the global namespace, but is needed for backward compatibility
+  include_directories(${FFTW_INCLUDE})
+  link_directories(${FFTW_LIBDIR})
+endif()
+
+set(ITK_USE_64BITS_IDS_DEFAULT "OFF")
+# Note WIN32 is true when targeting any windows system
+if(CMAKE_SIZEOF_VOID_P EQUAL "8" AND WIN32)
+  set(ITK_USE_64BITS_IDS_DEFAULT "ON")
+endif()
+option(
+  ITK_USE_64BITS_IDS
+  "When ON, ITK will use 64-bit integer types instead of long types for sizes and indexes. This is needed for managing images larger than 4Gb in some platforms."
+  "${ITK_USE_64BITS_IDS_DEFAULT}"
+)
+mark_as_advanced(ITK_USE_64BITS_IDS)
+
 # ITK turn on concept checking
-IF( NOT BORLAND )
-  OPTION(ITK_USE_CONCEPT_CHECKING "Turn on concept checking to give helpful errors at compile time if a type cannot be used as a template parameter." ON)
-  MARK_AS_ADVANCED(ITK_USE_CONCEPT_CHECKING)
-  OPTION(ITK_USE_STRICT_CONCEPT_CHECKING "Turn on Strict concept checking to give more stringent errors at compile time if a type cannot be used as a template parameter." OFF)
-  MARK_AS_ADVANCED(ITK_USE_STRICT_CONCEPT_CHECKING)
-ELSE( NOT BORLAND )
-  SET(ITK_USE_CONCEPT_CHECKING OFF)
-  MARK_AS_ADVANCED(ITK_USE_CONCEPT_CHECKING)
-  SET(ITK_USE_STRICT_CONCEPT_CHECKING OFF)
-  MARK_AS_ADVANCED(ITK_USE_STRICT_CONCEPT_CHECKING)
-ENDIF( NOT BORLAND )
+if(ITK_USE_CONCEPT_CHECKING)
+  message(
+    WARNING
+    "Ignoring ITK_USE_CONCEPT_CHECKING, as concept checking is performed unconditionally. This variable is no longer used"
+  )
+endif()
+if(ITK_USE_STRICT_CONCEPT_CHECKING)
+  message(
+    WARNING
+    "Compilers requiring ITK_USE_STRICT_CONCEPT_CHECKING are no longer supported.  This variable is no longer used."
+  )
+endif()
 
 #-----------------------------------------------------------------------------
-# Make the itk::Image assume the behavior of the itk::OrientedImage
-MARK_AS_ADVANCED(ITK_IMAGE_BEHAVES_AS_ORIENTED_IMAGE)
-OPTION(ITK_IMAGE_BEHAVES_AS_ORIENTED_IMAGE "Makes itk::Image behave like itk::OrientedImage" ON)
+# Mandatory wrapping options.
+# These are not correctly set when using cmake without the -DITK_WRAP_PYTHON:BOOL=ON flag.
+# In this case we need to tell the user that he has to change the flags manually to the right values.
+if(ITK_WRAPPING)
+  set(CMAKE_POSITION_INDEPENDENT_CODE 1)
+endif()
+
+#----------------------------------------------------------------------------
+set(ITK_TEST_OUTPUT_DIR "${ITK_BINARY_DIR}/Testing/Temporary")
 
-# ITK turn on experimental version of accelerated image registration
-OPTION(ITK_USE_OPTIMIZED_REGISTRATION_METHODS "Turn on the experimental version of accelerated registration methods." OFF)
-MARK_AS_ADVANCED(ITK_USE_OPTIMIZED_REGISTRATION_METHODS)
-IF(ITK_USE_OPTIMIZED_REGISTRATION_METHODS)
-  IF(NOT ITK_USE_REVIEW)
-    MESSAGE(FATAL_ERROR "ITK_USE_REVIEW is currently OFF but it should be ON if you want to use the experimental optimized registration methods.")
-  ENDIF(NOT ITK_USE_REVIEW)
-  # Warn the user about the implications of turning optimized registration methods ON
-  SET(msg "Attention: You have chosen to enable the use of Optimized Registration Methods.")
-  SET(msg "${msg} These methods add multi-threading capabilities to several image metrics")
-  SET(msg "${msg} as well as some Transforms and Interpolators. In order to take full advantage")
-  SET(msg "${msg} of these new features you will have to also add some new calls to these components.")
-  SET(msg "${msg} Please look at the files in the Examples/Review directory for further details.")
-
-# display the message during the setup
-MESSAGE("${msg}")
-
-
-ENDIF(ITK_USE_OPTIMIZED_REGISTRATION_METHODS)
-
-#-----------------------------------------------------------------------------
-# ITK use the new statistics framework
-OPTION( ITK_USE_REVIEW_STATISTICS "Use the experimental statistics framework." OFF)
-MARK_AS_ADVANCED( ITK_USE_REVIEW_STATISTICS )
-IF(ITK_USE_REVIEW_STATISTICS)
-  IF(NOT ITK_USE_REVIEW)
-    MESSAGE(FATAL_ERROR "ITK_USE_REVIEW is currently OFF but it should be ON if you want to use the experimental statistics framework.")
-  ENDIF(NOT ITK_USE_REVIEW)
-
-  # Warn the user about the implications of using the new statistics framework.
-  SET(msg "Attention: You have chosen to use the new statistics framework instead of the existing framework.")
-  SET(msg "${msg} The statistics classes have been re-designed/refactored and in several")
-  SET(msg "${msg} cases do not conform to the API of the older framework. You may need to")
-  SET(msg "${msg} change your code to use the new API.")
-  MESSAGE("${msg}")
-ENDIF(ITK_USE_REVIEW_STATISTICS)
-
-#-----------------------------------------------------------------------------
-# ITK turn on experimental version of accelerated image registration
-OPTION(ITK_USE_CONSOLIDATED_MORPHOLOGY "Turn on the experimental consolidated morphology." OFF)
-MARK_AS_ADVANCED(ITK_USE_CONSOLIDATED_MORPHOLOGY)
-
-IF(ITK_USE_CONSOLIDATED_MORPHOLOGY)
-  IF(NOT ITK_USE_REVIEW)
-    MESSAGE(FATAL_ERROR "ITK_USE_REVIEW is currently OFF but it should be ON if you want to use the experimental consolidated morphology.")
-  ENDIF(NOT ITK_USE_REVIEW)
-  # Warn the user about the implications of turning consolidated morphology ON
-  SET(msg "Attention: You have chosen to enable the use of consolidated morphology.")
-  # TODO: warn more than that
-  # display the message during the setup
-  MESSAGE("${msg}")
-ENDIF(ITK_USE_CONSOLIDATED_MORPHOLOGY)
-
-
-#-----------------------------------------------------------------------------
-# ITK turn on the use of experimental IO factories for the TransformFileReader and TransformFileWriter
-OPTION(ITK_USE_TRANSFORM_IO_FACTORIES "Turn on the experimental IO factories for reading and writing transforms." OFF)
-MARK_AS_ADVANCED(ITK_USE_TRANSFORM_IO_FACTORIES)
-IF(ITK_USE_TRANSFORM_IO_FACTORIES)
-  IF(NOT ITK_USE_REVIEW)
-    MESSAGE(FATAL_ERROR "ITK_USE_REVIEW is currently OFF but it should be ON if you want to use the experimental transform IO factories.")
-  ENDIF(NOT ITK_USE_REVIEW)
-ENDIF(ITK_USE_TRANSFORM_IO_FACTORIES)
-
-#-----------------------------------------------------------------------------
-# ITK turn on the correct usage of oriented images in gradient computations and image registration.
-OPTION(ITK_USE_ORIENTED_IMAGE_DIRECTION "Turn on correct use of oriented images direction in gradient computation and image registration." ON)
-MARK_AS_ADVANCED(ITK_USE_ORIENTED_IMAGE_DIRECTION)
-
-
-#-----------------------------------------------------------------------------
-# ITK turn on the correct usage of centered-pixel coordinates.
-OPTION(ITK_USE_CENTERED_PIXEL_COORDINATES_CONSISTENTLY "Turn on correct usage of centered-pixel coordinates." ON)
-MARK_AS_ADVANCED(ITK_USE_CENTERED_PIXEL_COORDINATES_CONSISTENTLY)
-
-#-----------------------------------------------------------------------------
-# ITK turn on the correct usage of centered-pixel coordinates.
-OPTION(ITK_USE_REGION_VALIDATION_IN_ITERATORS "Turn on region validation in Iterator constructors." ON)
-MARK_AS_ADVANCED(ITK_USE_REGION_VALIDATION_IN_ITERATORS)
-
-
-#-----------------------------------------------------------------------------
-# ITK turn on the use of Template Meta Programming techniques for unrolling loops of array-like operations
-OPTION(ITK_USE_TEMPLATE_META_PROGRAMMING_LOOP_UNROLLING "Turn on the use of Template Meta-Programming techniques for unrolling for-loops at compile time." ON)
-MARK_AS_ADVANCED(ITK_USE_TEMPLATE_META_PROGRAMMING_LOOP_UNROLLING)
-
-OPTION(ITK_USE_DEPRECATED_LEVELSET_INTERPOLATION "Turn on the use of a sparse field level set surface interpolation method that has been deprecated since ITK 3.6. Turn this flag ON to exactly replicate the behavior of ITK<=3.4." OFF)
-MARK_AS_ADVANCED(ITK_USE_DEPRECATED_LEVELSET_INTERPOLATION)
-
-OPTION(ITK_USE_DEPRECATED_FAST_MARCHING "Turn on incorrect handling of TrialPoints in itk::FastMarchingImageFilter result of a bug fixed in ITK 3.18. Turn this flag ON to exactly replicate the behavior of ITK<=3.16." OFF)
-MARK_AS_ADVANCED(ITK_USE_DEPRECATED_FAST_MARCHING)
-
-
-#-----------------------------------------------------------------------------
-# Installation vars.
-# ITK_INSTALL_BIN_DIR          - binary dir (executables)
-# ITK_INSTALL_LIB_DIR          - library dir (libs)
-# ITK_INSTALL_DATA_DIR         - share dir (say, examples, data, etc)
-# ITK_INSTALL_INCLUDE_DIR      - include dir (headers)
-# ITK_INSTALL_PACKAGE_DIR      - package/export configuration files
-# ITK_INSTALL_NO_DEVELOPMENT   - do not install development files
-# ITK_INSTALL_NO_RUNTIME       - do not install runtime files
-# ITK_INSTALL_NO_DOCUMENTATION - do not install documentation files
-
-OPTION(ITK_USE_FLAT_DIRECTORY_INSTALL  "When ON, ITK will install all the header files in a single directory. This reduces the number of directories that must be searched for headers in projects based on ITK" OFF)
-MARK_AS_ADVANCED(ITK_USE_FLAT_DIRECTORY_INSTALL)
-
-IF(NOT ITK_INSTALL_BIN_DIR)
-  # Solaris: unlike libraries, 64 bit executables should be installed in "bin${sun64}" only
-  # if the 32 version is installed in  "bin/sparcv7" or "bin/i86", and a isaexec
-  # is copied in "bin" with the name of the executable, so the system can choose the best
-  # executable. If only a 32 or 64 bit version is available, the executable should go in
-  # bin. So it seems better to let the packagers deal with that.
-  # Ref: http://docs.sun.com/app/docs/doc/816-5138/dev-env-13?a=view
-  SET(ITK_INSTALL_BIN_DIR "/bin")
-ENDIF(NOT ITK_INSTALL_BIN_DIR)
-
-IF(NOT ITK_INSTALL_LIB_DIR)
-  # 64 bit libraries are not installed in the same directories on solaris
-  # Ref: http://docs.sun.com/app/docs/doc/816-5138/6mba6ua5m?a=view
-  SET(sun64 )
-  IF(CMAKE_SYSTEM MATCHES "SunOS.*" AND CMAKE_SIZEOF_VOID_P EQUAL 8)
-    EXEC_PROGRAM("uname"
-      ARGS "-p"
-      OUTPUT_VARIABLE sunproc
-    )
-    IF("${sunproc}" STREQUAL "sparc")
-      SET(sun64 "/sparcv9")
-    ENDIF("${sunproc}" STREQUAL "sparc")
-
-    IF("${sunproc}" STREQUAL "i386")
-      SET(sun64 "/amd64")
-    ENDIF("${sunproc}" STREQUAL "i386")
-
-    IF("${sun64}" STREQUAL "")
-      # sun64 is not set - solaris has been ported to a new architecture?
-      MESSAGE("Warning: Unknown processor '${sunproc}'. The libraries may not be installed in the right place.")
-    ENDIF("${sun64}" STREQUAL "")
-  ENDIF(CMAKE_SYSTEM MATCHES "SunOS.*" AND CMAKE_SIZEOF_VOID_P EQUAL 8)
-
-  SET(ITK_INSTALL_LIB_DIR "/lib/InsightToolkit${sun64}")
-ENDIF(NOT ITK_INSTALL_LIB_DIR)
-
-IF(NOT ITK_INSTALL_DATA_DIR)
-  SET(ITK_INSTALL_DATA_DIR "/share/InsightToolkit")
-ENDIF(NOT ITK_INSTALL_DATA_DIR)
-
-IF(NOT ITK_INSTALL_INCLUDE_DIR)
-  SET(ITK_INSTALL_INCLUDE_DIR "/include/InsightToolkit")
-ENDIF(NOT ITK_INSTALL_INCLUDE_DIR)
-
-IF(NOT ITK_INSTALL_PACKAGE_DIR)
-  SET(ITK_INSTALL_PACKAGE_DIR ${ITK_INSTALL_LIB_DIR}
-    CACHE INTERNAL "")
-ENDIF(NOT ITK_INSTALL_PACKAGE_DIR)
-
-IF(NOT ITK_INSTALL_NO_DEVELOPMENT)
-  SET(ITK_INSTALL_NO_DEVELOPMENT 0)
-ENDIF(NOT ITK_INSTALL_NO_DEVELOPMENT)
-
-IF(NOT ITK_INSTALL_NO_RUNTIME)
-  SET(ITK_INSTALL_NO_RUNTIME 0)
-ENDIF(NOT ITK_INSTALL_NO_RUNTIME)
-
-IF(NOT ITK_INSTALL_NO_DOCUMENTATION)
-  SET(ITK_INSTALL_NO_DOCUMENTATION 0)
-ENDIF(NOT ITK_INSTALL_NO_DOCUMENTATION)
-
-SET(ITK_INSTALL_NO_LIBRARIES)
-IF(ITK_BUILD_SHARED_LIBS)
-  IF(ITK_INSTALL_NO_RUNTIME AND ITK_INSTALL_NO_DEVELOPMENT)
-    SET(ITK_INSTALL_NO_LIBRARIES 1)
-  ENDIF(ITK_INSTALL_NO_RUNTIME AND ITK_INSTALL_NO_DEVELOPMENT)
-ELSE(ITK_BUILD_SHARED_LIBS)
-  IF(ITK_INSTALL_NO_DEVELOPMENT)
-    SET(ITK_INSTALL_NO_LIBRARIES 1)
-  ENDIF(ITK_INSTALL_NO_DEVELOPMENT)
-ENDIF(ITK_BUILD_SHARED_LIBS)
-
-# Because INSTALL_* commands require a leading / and because INSTALL (cmake 2.4
-# and newer) requires no leading / to install under INSTALL_PREFIX, we
-# are stripping the leading /. In the future, there should be no leading
-# / in any install directory variables
-STRING(REGEX REPLACE "^/" "" ITK_INSTALL_LIB_DIR_CM24 "${ITK_INSTALL_LIB_DIR}")
-STRING(REGEX REPLACE "^/" "" ITK_INSTALL_BIN_DIR_CM24 "${ITK_INSTALL_BIN_DIR}")
-STRING(REGEX REPLACE "^/" "" ITK_INSTALL_INCLUDE_DIR_CM24 "${ITK_INSTALL_INCLUDE_DIR}")
-STRING(REGEX REPLACE "^/" "" ITK_INSTALL_PACKAGE_DIR_CM24 "${ITK_INSTALL_PACKAGE_DIR}")
-STRING(REGEX REPLACE "^/" "" ITK_INSTALL_DOXYGEN_DIR_CM24 "${ITK_INSTALL_DOXYGEN_DIR}")
-STRING(REGEX REPLACE "^/" "" ITK_INSTALL_TCL_DIR_CM24 "${ITK_INSTALL_TCL_DIR}")
-STRING(REGEX REPLACE "^/" "" ITK_INSTALL_JAVA_DIR_CM24 "${ITK_INSTALL_JAVA_DIR}")
-
-# Make sure the user does not try to install on top of the build tree.
-IF(WIN32 OR APPLE OR UNIX)
-  STRING(TOLOWER "${CMAKE_INSTALL_PREFIX}" _PREFIX)
-  STRING(TOLOWER "${ITK_BINARY_DIR}" _BUILD)
-ELSE(WIN32 OR APPLE OR UNIX)
-  SET(_PREFIX "${CMAKE_INSTALL_PREFIX}")
-  SET(_BUILD "${ITK_BINARY_DIR}")
-ENDIF(WIN32 OR APPLE OR UNIX)
-IF("${_PREFIX}" STREQUAL "${_BUILD}")
-  MESSAGE(FATAL_ERROR
-    "The current CMAKE_INSTALL_PREFIX points at the build tree:\n"
-    "  ${CMAKE_INSTALL_PREFIX}\n"
-    "This is not supported."
-    )
-ENDIF("${_PREFIX}" STREQUAL "${_BUILD}")
-
-# set ITK_DIR so it can be used by subprojects
-SET(ITK_DIR "${CMAKE_BINARY_DIR}" CACHE INTERNAL "ITK dir to be used by subprojects")
-
-#-----------------------------------------------------------------------------
-# Set up CPack support, to be able to distribute ITK binary packages. It will
-# be particulary useful to distributed prebuilt ITK witk extended languages
-# support enable
-#
-INCLUDE(InstallRequiredSystemLibraries)
-SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Insight Toolkit")
-SET(CPACK_PACKAGE_VENDOR "ISC")
-SET(CPACK_PACKAGE_VERSION_MAJOR "${ITK_VERSION_MAJOR}")
-SET(CPACK_PACKAGE_VERSION_MINOR "${ITK_VERSION_MINOR}")
-SET(CPACK_PACKAGE_VERSION_PATCH "${ITK_VERSION_PATCH}")
-SET(CPACK_PACKAGE_INSTALL_DIRECTORY "InsightToolkit-${ITK_VERSION_MAJOR}.${ITK_VERSION_MINOR}")
-# SET(CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_CURRENT_SOURCE_DIR}/README")
-SET(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/Copyright/ITKCopyright.txt")
-INCLUDE(CPack)
-
-
-#-----------------------------------------------------------------------------
-# Perform a setup of ITK Wrapping. This will provide CMake options for
-# individual wrapping as well as determine if CableSwig is required. If it is,
-# ITK_NEED_CableSwig will be set. This file also tries to locate CableSwig by
-# searching first in the source tree of ITK, and if that fails, it searches
-# for a binary built of CableSwig.
-#
-INCLUDE(${ITK_SOURCE_DIR}/Wrapping/itkWrapSetup.cmake)
-
-
-IF(WIN32)
-  # Some libraries (e.g. vxl libs) have no dllexport markup, so we can
-  # build full shared libraries only with the GNU toolchain.
-  IF(CMAKE_COMPILER_IS_GNUCXX)
-    # CMake adds --enable-all-exports on Cygwin (since Cygwin is
-    # supposed to be UNIX-like), but we need to add it explicitly for
-    # a native windows build with the MinGW tools.
-    IF(MINGW)
-      SET(CMAKE_SHARED_LIBRARY_CREATE_C_FLAGS
-        "-shared -Wl,--export-all-symbols -Wl,--enable-auto-import")
-      SET(CMAKE_SHARED_LIBRARY_CREATE_CXX_FLAGS
-        "-shared -Wl,--export-all-symbols -Wl,--enable-auto-import")
-      SET(CMAKE_EXE_LINKER_FLAGS "-Wl,--enable-auto-import")
-    ENDIF(MINGW)
-    IF(CYGWIN)
-      SET(CMAKE_EXE_LINKER_FLAGS "-Wl,--enable-auto-import")
-    ENDIF(CYGWIN)
-  ELSE(CMAKE_COMPILER_IS_GNUCXX)
-   IF(BUILD_SHARED_LIBS)
-     SET(ITK_COMMON_BUILD_TYPE "SHARED")
-   ELSE(BUILD_SHARED_LIBS)
-     SET(ITK_COMMON_BUILD_TYPE "STATIC")
-   ENDIF(BUILD_SHARED_LIBS)
-   SET(BUILD_SHARED_LIBS OFF)
-  ENDIF(CMAKE_COMPILER_IS_GNUCXX)
-ENDIF(WIN32)
-
-OPTION(BUILD_EXAMPLES "Build the Examples directory." ON)
-
-OPTION(ITK_USE_SYSTEM_VXL "Use an outside build of VXL." OFF)
-MARK_AS_ADVANCED(ITK_USE_SYSTEM_VXL)
-IF(ITK_USE_SYSTEM_VXL)
-  FIND_PACKAGE(VXL)
-  IF(VXL_FOUND)
-    INCLUDE(${VXL_CMAKE_DIR}/UseVXL.cmake)
-    SET(VXL_NUMERICS_LIBRARIES vnl vnl_algo netlib vcl)
-  ELSE(VXL_FOUND)
-    MESSAGE(FATAL_ERROR "Must set VXL_DIR for ITK_USE_SYSTEM_VXL.")
-  ENDIF(VXL_FOUND)
-ELSE(ITK_USE_SYSTEM_VXL)
-  SET(VXL_NETLIB_INCLUDE_DIR ${ITK_SOURCE_DIR}/Utilities/vxl/v3p/netlib)
-  SET(VXL_NUMERICS_LIBRARIES itkvnl_algo)
-ENDIF(ITK_USE_SYSTEM_VXL)
-
-
-# Provide options to use system versions of third-party libraries.
-ITK_THIRD_PARTY_OPTION(ZLIB zlib)
-ITK_THIRD_PARTY_OPTION(PNG  png)
-ITK_THIRD_PARTY_OPTION(TIFF tiff)
-
-OPTION(ITK_USE_LIBXML2 "Use LIBXML2." OFF)
-MARK_AS_ADVANCED(ITK_USE_LIBXML2)
-ITK_THIRD_PARTY_OPTION(LIBXML2 libxml2)
-
-#-----------------------------------------------------------------------------
-# If choose to build documentation, then search for Doxygen executables.
-OPTION(BUILD_DOXYGEN "Build Doxygen Documentation" OFF)
-IF(BUILD_DOXYGEN)
-  FIND_PACKAGE(Doxygen)
-ENDIF(BUILD_DOXYGEN)
-
-#-----------------------------------------------------------------------------
-# Dispatch the build into the proper subdirectories.
-SUBDIRS(Utilities Code)
-
-SUBDIRS(Wrapping)
-
-IF (BUILD_TESTING)
-  SUBDIRS(Testing)
-ENDIF (BUILD_TESTING)
-
-IF(BUILD_EXAMPLES)
-  SUBDIRS(Examples)
-ENDIF(BUILD_EXAMPLES)
-
-#-----------------------------------------------------------------------------
-# ITK requires special compiler flags on some platforms.
-IF(CMAKE_COMPILER_IS_GNUCXX)
-  SET(ITK_REQUIRED_C_FLAGS "${ITK_REQUIRED_C_FLAGS} -Wall -Wno-uninitialized -Wno-unused-parameter")
-  SET(ITK_REQUIRED_CXX_FLAGS "${ITK_REQUIRED_CXX_FLAGS} -ftemplate-depth-50 -Wall")
-  INCLUDE(${ITK_SOURCE_DIR}/CMake/itkCheckCXXAcceptsFlags.cmake)
-  itkCHECK_CXX_ACCEPTS_FLAGS("-Wno-deprecated" CXX_HAS_DEPRECATED_FLAG)
-  IF(CXX_HAS_DEPRECATED_FLAG)    
-    SET(ITK_REQUIRED_CXX_FLAGS "${ITK_REQUIRED_CXX_FLAGS} -Wno-deprecated")
-  ENDIF(CXX_HAS_DEPRECATED_FLAG)    
-  IF(APPLE)
-    # -no-cpp-precomp and -Wno-long-double were compiler flags present
-    # only in Apple's gcc and not in the FSF gcc. The flags are obsolete
-    # and totally removed in gcc 4.2 and later. I believe they are only
-    # needed with gcc 3.3 and earlier.
-    itkCHECK_CXX_ACCEPTS_FLAGS("-no-cpp-precomp" CXX_HAS_CPP_PRECOMP_FLAG)
-    IF(CXX_HAS_CPP_PRECOMP_FLAG)    
-      SET(ITK_REQUIRED_C_FLAGS "${ITK_REQUIRED_C_FLAGS} -no-cpp-precomp")
-      SET(ITK_REQUIRED_CXX_FLAGS "${ITK_REQUIRED_CXX_FLAGS} -no-cpp-precomp")
-    ENDIF(CXX_HAS_CPP_PRECOMP_FLAG)    
-    itkCHECK_CXX_ACCEPTS_FLAGS("-Wno-long-double" CXX_HAS_LONGDOUBLE_FLAG)
-    IF(CXX_HAS_LONGDOUBLE_FLAG)    
-      SET(ITK_REQUIRED_C_FLAGS "${ITK_REQUIRED_C_FLAGS} -Wno-long-double")
-      SET(ITK_REQUIRED_CXX_FLAGS "${ITK_REQUIRED_CXX_FLAGS} -Wno-long-double")
-    ENDIF(CXX_HAS_LONGDOUBLE_FLAG)    
-
-    OPTION(ITK_USE_64BITS_APPLE_TRUNCATION_WARNING "Turn on warnings on 64bits to 32bits truncations." OFF)
-    MARK_AS_ADVANCED(ITK_USE_64BITS_APPLE_TRUNCATION_WARNING)
-
-  ENDIF(APPLE)
-  
-  # gcc must have -msse2 option to enable sse2 support
-  IF(VNL_CONFIG_ENABLE_SSE2 OR VNL_CONFIG_ENABLE_SSE2_ROUNDING)
-    SET(ITK_REQUIRED_CXX_FLAGS "${ITK_REQUIRED_CXX_FLAGS} -msse2")
-  ENDIF(VNL_CONFIG_ENABLE_SSE2 OR VNL_CONFIG_ENABLE_SSE2_ROUNDING)
-ENDIF(CMAKE_COMPILER_IS_GNUCXX)
-
-IF(UNIX)
-  IF(NOT CMAKE_COMPILER_IS_GNUCXX)
-    INCLUDE(${ITK_SOURCE_DIR}/CMake/TestNO_ICC_IDYNAMIC_NEEDED.cmake)
-    TESTNO_ICC_IDYNAMIC_NEEDED(NO_ICC_IDYNAMIC_NEEDED ${ITK_SOURCE_DIR}/CMake )
-    IF(NO_ICC_IDYNAMIC_NEEDED)
-      SET(ITK_REQUIRED_CXX_FLAGS "${ITK_REQUIRED_CXX_FLAGS}")
-    ELSE(NO_ICC_IDYNAMIC_NEEDED)
-      SET(ITK_REQUIRED_CXX_FLAGS "${ITK_REQUIRED_CXX_FLAGS} -i_dynamic")
-    ENDIF(NO_ICC_IDYNAMIC_NEEDED)
-  ENDIF(NOT CMAKE_COMPILER_IS_GNUCXX)
-ENDIF(UNIX)
-
-
-#
-#  This line is required for gcc 4.3.3, since ITK uses deprecated header files
-#  by default.
-#
-INCLUDE(TestForANSIStreamHeaders)
-
-
-IF(BORLAND)
-    SET(ITK_REQUIRED_CXX_FLAGS "${ITK_REQUIRED_CXX_FLAGS} -w- -whid -waus -wpar")
-    SET(ITK_REQUIRED_C_FLAGS "${ITK_REQUIRED_C_FLAGS} -w- -whid -waus -wpar")
-ENDIF(BORLAND)
-
-# Force the use of ansi cxx flags (i.e. -LANG:std on sgi )
-IF("x${CMAKE_ANSI_CXXFLAGS}" MATCHES "^x.*[^ ]")
-  SET(ITK_REQUIRED_CXX_FLAGS "${ITK_REQUIRED_CXX_FLAGS} ${CMAKE_ANSI_CXXFLAGS}")
-ENDIF("x${CMAKE_ANSI_CXXFLAGS}" MATCHES "^x.*[^ ]")
-IF("x${CMAKE_ANSI_CFLAGS}" MATCHES "^x.*[^ ]")
-  SET(ITK_REQUIRED_C_FLAGS "${ITK_REQUIRED_C_FLAGS} ${CMAKE_ANSI_CFLAGS}")
-ENDIF("x${CMAKE_ANSI_CFLAGS}" MATCHES "^x.*[^ ]")
-
-IF(CMAKE_SYSTEM MATCHES "IRIX.*")
-  IF(NOT CMAKE_COMPILER_IS_GNUCXX)
-    SET(ITK_REQUIRED_CXX_FLAGS "${ITK_REQUIRED_CXX_FLAGS} -woff 15,84,1110,1209,1424,1468,3102,3210,3439  -no_auto_include -ptused -no_prelink")
-    SET(ITK_REQUIRED_LINK_FLAGS "${ITK_REQUIRED_LINK_FLAGS}  -Wl,-woff15")
-  ENDIF(NOT CMAKE_COMPILER_IS_GNUCXX)
-ENDIF(CMAKE_SYSTEM MATCHES "IRIX.*")
-
-IF(MINGW)
-  LINK_LIBRARIES(gdi32)
-ENDIF(MINGW)
-
-# Add flags for the SUN compiler to provide all the methods for std::allocator.
-#
-INCLUDE(${ITK_SOURCE_DIR}/CMake/itkCheckCXXAcceptsFlags.cmake)
-itkCHECK_CXX_ACCEPTS_FLAGS("-features=no%anachronisms" SUN_COMPILER)
-IF(SUN_COMPILER)
-  itkCHECK_CXX_ACCEPTS_FLAGS("-library=stlport4" SUN_COMPILER_HAS_STL_PORT_4)
-  IF(SUN_COMPILER_HAS_STL_PORT_4)
-    SET(ITK_REQUIRED_CXX_FLAGS "${ITK_REQUIRED_CXX_FLAGS} -library=stlport4")
-  ENDIF(SUN_COMPILER_HAS_STL_PORT_4)
-ENDIF(SUN_COMPILER)
-
-# for the gnu compiler a -D_PTHREADS is needed on sun
-# for the native compiler a -mt flag is needed on the sun
-IF(CMAKE_USE_PTHREADS)
-  IF(CMAKE_SYSTEM MATCHES "SunOS.*")
-    IF(CMAKE_COMPILER_IS_GNUCXX)
-      SET(ITK_REQUIRED_CXX_FLAGS "${ITK_REQUIRED_CXX_FLAGS} -D_PTHREADS")
-    ELSE(CMAKE_COMPILER_IS_GNUCXX)
-      SET(ITK_REQUIRED_CXX_FLAGS "${ITK_REQUIRED_CXX_FLAGS} -mt")
-      SET(ITK_REQUIRED_C_FLAGS "${ITK_REQUIRED_C_FLAGS} -mt")
-    ENDIF(CMAKE_COMPILER_IS_GNUCXX)
-  ENDIF(CMAKE_SYSTEM MATCHES "SunOS.*")
-ENDIF(CMAKE_USE_PTHREADS)
-
-IF(WIN32)
-  SET(ITK_REQUIRED_CXX_FLAGS "${ITK_REQUIRED_CXX_FLAGS} -DNOMINMAX")
-ENDIF(WIN32)
-
-#-----------------------------------------------------------------------------
-# Test for an Objective-C++ compiler.
-SET(ITK_OBJCXX_COMPILER_WORKS 0)
-IF(APPLE)
-  TRY_COMPILE(ITK_OBJCXX_COMPILER_WORKS
-              ${ITK_BINARY_DIR}/CMakeTmp
-              ${ITK_SOURCE_DIR}/CMake/itkTestObjCxxCompiler.mm
-              OUTPUT_VARIABLE ITK_OBJCXX_TRY_COMPILE_OUTPUT)
-  IF( ITK_OBJCXX_COMPILER_WORKS )
-    FILE(APPEND ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeOutput.log
-        "Determining if the Objective-C compiler works passed with "
-        "the following output:\n${ITK_OBJCXX_TRY_COMPILE_OUTPUT}\n\n")
-  ELSE( ITK_OBJCXX_COMPILER_WORKS )
-    FILE(APPEND ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeError.log
-      "Determining if the Objective-C compiler works failed with "
-      "the following output:\n${ITK_OBJCXX_TRY_COMPILE_OUTPUT}\n\n")
-  ENDIF( ITK_OBJCXX_COMPILER_WORKS )
-ENDIF(APPLE)
-
-# mingw thread support
-IF(MINGW)
-  SET(ITK_REQUIRED_CXX_FLAGS "${ITK_REQUIRED_CXX_FLAGS} -mthreads")
-  SET(ITK_REQUIRED_C_FLAGS "${ITK_REQUIRED_C_FLAGS} -mthreads")
-  SET(ITK_REQUIRED_LINK_FLAGS "${ITK_REQUIRED_LINK_FLAGS} -mthreads")
-ENDIF(MINGW)
-
-#-----------------------------------------------------------------------------
-# Find platform-specific differences in the handling of IEEE floating point 
-# special values.
-INCLUDE(${ITK_SOURCE_DIR}/CMake/CheckBigBitfield.cmake)
-CHECK_BIG_BITFIELD(BIGBITFIELD_VALUE ${ITK_SOURCE_DIR}/CMake)
-IF(BIGBITFIELD_VALUE)
-   SET(BIGBITFIELD 1 CACHE INTERNAL "System handles bit-fields larger than 32 bits.")
-ELSE(BIGBITFIELD_VALUE)
-   SET(BIGBITFIELD 0 CACHE INTERNAL "System handles bit-fields larger than 32 bits.")
-ENDIF(BIGBITFIELD_VALUE)
-
-INCLUDE(${ITK_SOURCE_DIR}/CMake/TestQnanhibit.cmake)
-TEST_QNANHIBIT(QNANHIBIT_VALUE ${ITK_SOURCE_DIR}/CMake)
-IF(QNANHIBIT_VALUE)
-   SET(QNANHIBIT 1 CACHE INTERNAL "The 22nd bit of 32-bit floating-point quiet NaN.")
-ELSE(QNANHIBIT_VALUE)
-   SET(QNANHIBIT 0 CACHE INTERNAL "The 22nd bit of 32-bit floating-point quiet NaN.")
-ENDIF(QNANHIBIT_VALUE)
-
-INCLUDE(CheckTypeSize)
-
-
-#-----------------------------------------------------------------------------
-#
-# Check types such as long long and __int64
-INCLUDE(${ITK_SOURCE_DIR}/CMake/itkTestTypes.cmake)
-
-
-#-----------------------------------------------------------------------------
-# check if the platform has the header file "fenv.h" which has been added as part of the C99 standard
-INCLUDE(CheckIncludeFiles)
-CHECK_INCLUDE_FILES(fenv.h HAVE_FENV_H)
-
-#-----------------------------------------------------------------------------
-# check if the platform has some widely used header files
-CHECK_INCLUDE_FILES("unistd.h" HAVE_UNISTD_H)
-
-#
-# See if compiler preprocessor has the __FUNCTION__ directive used by itkExceptionMacro
-#
-INCLUDE(${ITK_SOURCE_DIR}/CMake/CheckCPPDirective.cmake)
-CHECK_CPP_DIRECTIVE_EXISTS(__FUNCTION__ ITK_CPP_FUNCTION)
-
-#
-# See if compiler support template partial specialization
-#
-TRY_COMPILE(ITK_SUPPORTS_TEMPLATE_PARTIAL_SPECIALIZATION
-      ${ITK_BINARY_DIR}/CMakeTmp
-      ${ITK_SOURCE_DIR}/CMake/itkTestTemplatePartialSpecialization.cxx
-      OUTPUT_VARIABLE ITK_SUPPORTS_TEMPLATE_PARTIAL_SPECIALIZATION_OUTPUT)
-
-#
-# Figure out how the compiler likes to declare templated functions as friends
-# of a templated class.
-#
-INCLUDE(${ITK_SOURCE_DIR}/CMake/itkTestFriendTemplatedFunction.cmake)
-
-
-#-----------------------------------------------------------------------------
-# check if the platform has c style IO functions that uses wchar_t * filenames
-# For some reason I can't manage to get a usable result from CHECK_FUNCTION_EXISTS
-TRY_COMPILE(ITK_SUPPORTS_WCHAR_T_FILENAME_CSTYLEIO
-      ${ITK_BINARY_DIR}/CMakeTmp
-      ${ITK_SOURCE_DIR}/CMake/itkTestCStyleIOWCharFilename.cxx
-      OUTPUT_VARIABLE ITK_SUPPORTS_WCHAR_T_FILENAME_CSTYLEIO_OUTPUT)
-
-#-----------------------------------------------------------------------------
-# check if the platform has IO streams constructors that uses wchar_t * filenames
-TRY_COMPILE(ITK_SUPPORTS_WCHAR_T_FILENAME_IOSTREAMS_CONSTRUCTORS
-      ${ITK_BINARY_DIR}/CMakeTmp
-      ${ITK_SOURCE_DIR}/CMake/itkTestIOStreamsWCharFilenameConstructors.cxx
-      OUTPUT_VARIABLE ITK_SUPPORTS_WCHAR_T_FILENAME_IOSTREAMS_CONSTRUCTORS_OUTPUT)
-
-#-----------------------------------------------------------------------------
-# check if the platform can compile fdstream.hpp
-IF(HAVE_UNISTD_H)
-  TRY_COMPILE(ITK_SUPPORTS_FDSTREAM_HPP
-    ${ITK_BINARY_DIR}/CMakeTmp
-    ${ITK_SOURCE_DIR}/CMake/itkTestFDStream.cxx
-    CMAKE_FLAGS -DINCLUDE_DIRECTORIES:STRING=${ITK_SOURCE_DIR}/Utilities/itkExtHdrs
-    COMPILE_DEFINITIONS -DITK_HAVE_UNISTD_H=${HAVE_UNISTD_H}
-    OUTPUT_VARIABLE ITK_SUPPORTS_FDSTREAM_HPP_OUTPUT)
-ELSE(HAVE_UNISTD_H)
-  TRY_COMPILE(ITK_SUPPORTS_FDSTREAM_HPP
-    ${ITK_BINARY_DIR}/CMakeTmp
-    ${ITK_SOURCE_DIR}/CMake/itkTestFDStream.cxx
-    CMAKE_FLAGS -DINCLUDE_DIRECTORIES:STRING=${ITK_SOURCE_DIR}/Utilities/itkExtHdrs
-    OUTPUT_VARIABLE ITK_SUPPORTS_FDSTREAM_HPP_OUTPUT)
-ENDIF(HAVE_UNISTD_H)
-
-#-----------------------------------------------------------------------------
 # Configure the default ITK_DATA_ROOT for the location of ITK Data.
-FIND_PATH(ITK_DATA_ROOT ITKData.readme ${ITK_SOURCE_DIR}/Testing/Data $ENV{ITK_DATA_ROOT})
-MARK_AS_ADVANCED(ITK_DATA_ROOT)
+set(ITK_DATA_ROOT ${ITK_SOURCE_DIR}/Testing/Data)
 
-#-----------------------------------------------------------------------------
-# Configure the default ITK_BRAINWEB_DATA_ROOT for the location of ITK Data.
-# When this data is available, additional 3D tests are enabled.
-FIND_PATH(ITK_BRAINWEB_DATA_ROOT brainweb165a10f17.mha 
-  DOC "Directory with data taken from http://public.kitware.com/pub/itk/Data/BrainWeb/")
-MARK_AS_ADVANCED(ITK_BRAINWEB_DATA_ROOT)
+# Location of ITK Example Data.
+set(ITK_EXAMPLE_DATA_ROOT "${ITK_SOURCE_DIR}/Examples/Data")
 
-#-----------------------------------------------------------------------------
-# Configure the default ITK_MRI_UNC_DATABASE_DATA_ROOT for the location of the
-# database of healthy volunteers MRI brain images.
-# When this data is available, additional 3D tests are enabled.
-FIND_PATH(ITK_MRI_UNC_DATABASE_DATA_ROOT LICENSE.txt
-  DOC "Directory with data taken from http://public.kitware.com/pub/itk/Data/HealthyVolunteersMRIDatabase/")
-MARK_AS_ADVANCED(ITK_MRI_UNC_DATABASE_DATA_ROOT)
-
-#-----------------------------------------------------------------------------
-# Configure the default ITK_OSIRIX_DATA_ROOT for the location of Data from the Osirix web site.
-# When this data is available, additional DICOM tests are enabled.
-FIND_PATH(ITK_OSIRIX_DATA_ROOT CEREBRIX
-  DOC "Directory with data taken from http://www.osirix-viewer.com/Downloads.html")
-MARK_AS_ADVANCED(ITK_OSIRIX_DATA_ROOT)
-
-
-#-----------------------------------------------------------------------------
-# Configure the default ITK_VISIBLEHUMAN_DATA_ROOT for the location of Data from the Visible Human Project
-# When this data is available, additional Examples are enabled.
-FIND_PATH(ITK_VISIBLEHUMAN_DATA_ROOT Male/Fullcolor/fullbody
-  DOC "Directory with data taken from http://www.nlm.nih.gov/research/visible/getting_data.html")
-MARK_AS_ADVANCED(ITK_VISIBLEHUMAN_DATA_ROOT)
-
-
-#-----------------------------------------------------------------------------
 # This flag is used in particular, to enable some tests that require large memory to run.
-# This probably can be discovered at configuration time by CMake. (Check with CMake developers).
-SET(ITK_COMPUTER_MEMORY_SIZE 1 CACHE STRING "Provide here the size of your RAM Memory in GigaBytes") 
-MARK_AS_ADVANCED(ITK_COMPUTER_MEMORY_SIZE)
+# Test that have significant memory requirements should use
+# "set_tests_properties(testname PROPERTIES RESOURCE_LOCK MEMORY_SIZE)",
+# so that only 1 of the memory constrained tests is run at a time.  (NOTE: Other low
+# memory tests that do not have the RESOURCE_LOCK requirement can be run at the same time.)
+# Allow for tests that may use upto 80% of the computer memory to be used for testing.
+cmake_host_system_information(
+  RESULT ITK_COMPUTER_MEMORY_AVAILABLE_MB
+  QUERY
+    TOTAL_PHYSICAL_MEMORY
+)
+math(
+  EXPR
+  EIGHTY_PERCENT_AVAILABLE_MEMORY_IN_GB
+  "(${ITK_COMPUTER_MEMORY_AVAILABLE_MB} * 80) / ( 1024 * 100)"
+)
+set(
+  ITK_COMPUTER_MEMORY_SIZE
+  ${EIGHTY_PERCENT_AVAILABLE_MEMORY_IN_GB}
+  CACHE STRING
+  "Provide here the size of your RAM in gibibytes"
+)
+unset(EIGHTY_PERCENT_AVAILABLE_MEMORY_IN_GB)
+unset(ITK_COMPUTER_MEMORY_AVAILABLE_MB)
+mark_as_advanced(ITK_COMPUTER_MEMORY_SIZE)
+
+#This flag sets the floating point type used in itk::ImageBase for
+# spacing/direction/origin to single precision
+option(
+  ITK_USE_FLOAT_SPACE_PRECISION
+  "Use single precision for origin/spacing/directions in itk::Image"
+  OFF
+)
+mark_as_advanced(ITK_USE_FLOAT_SPACE_PRECISION)
+if(ITK_USE_FLOAT_SPACE_PRECISION AND ITK_WRAP_PYTHON)
+  message(
+    FATAL_ERROR
+    "ITK_USE_FLOAT_SPACE_PRECISION=ON not supported with ITK_WRAP_PYTHON=ON"
+  )
+endif()
+
+# This flag allows to not build itkTestDrivers while still configuring all the tests and disable all
+# tests that are implemented in the `test` folder in each ITK module. It does not disable tests
+# that are implemented in the wrapping folder.
+# This is used by dashboards to speed up compilation and testing on certain platforms.
+option(DISABLE_MODULE_TESTS "Disable all ITK module tests in `test` folder" OFF)
+mark_as_advanced(DISABLE_MODULE_TESTS)
 
 #-----------------------------------------------------------------------------
-# Configure files with settings for use by the build.
-CONFIGURE_FILE(${ITK_SOURCE_DIR}/itkConfigure.h.in 
-  ${ITK_BINARY_DIR}/itkConfigure.h)
-IF(NOT ITK_INSTALL_NO_DEVELOPMENT)
-  INSTALL(FILES ${ITK_BINARY_DIR}/itkConfigure.h
-    DESTINATION ${ITK_INSTALL_INCLUDE_DIR_CM24}
-    COMPONENT Development)
-ENDIF(NOT ITK_INSTALL_NO_DEVELOPMENT)
+# Need to set python variables before remote modules are included.
+if(BUILD_TESTING OR ITK_BUILD_DOCUMENTATION OR ITK_WRAP_PYTHON)
+  set(PYTHON_DEVELOPMENT_REQUIRED ${ITK_WRAP_PYTHON})
+  include(${CMAKE_CURRENT_SOURCE_DIR}/CMake/ITKSetPython3Vars.cmake)
+
+  if(ITK_WRAP_PYTHON AND NOT Python3_INCLUDE_DIRS)
+    message(
+      FATAL_ERROR
+      "Python version ${Python3_VERSION} development environment not found for wrapping."
+    )
+  endif()
+  if(NOT Python3_ROOT_DIR)
+    get_filename_component(Python3_ROOT_DIR ${Python3_EXECUTABLE} DIRECTORY)
+  endif()
+endif()
 
 #-----------------------------------------------------------------------------
-# The entire ITK tree should use the same include path, except for the
-# Wrapping directory.
+# Configure Eigen3 before ITKModuleEnablement
+# No download or build is performed. Generates Targets and Config.cmake files for Eigen
+include(itkExternal_Eigen3)
 
-# Create the list of include directories needed for ITK header files.
-INCLUDE(${ITK_SOURCE_DIR}/itkIncludeDirectories.cmake)
+#----------------------------------------------------------------------
+# Make sure remote modules are downloaded before sorting out the module
+# dependencies.
+add_subdirectory(Modules/Remote)
 
-# This should be the only INCLUDE_DIRECTORIES command in the entire
-# tree, except for the Utilities and Wrapping directories.  We need to
-# do this in one place to make sure the order is correct.
-INCLUDE_DIRECTORIES(
-  ${ITK_INCLUDE_DIRS_BUILD_TREE}
-  ${ITK_INCLUDE_DIRS_BUILD_TREE_CXX}
-  ${ITK_INCLUDE_DIRS_SYSTEM}
+# Enable modules according to user inputs and the module dependency DAG.
+include(ITKModuleEnablement)
+
+# Setup clang-tidy for code best-practices enforcement for C++11
+include(ITKClangTidySetup)
+#----------------------------------------------------------------------
+# Generate ITKConfig.cmake for the build tree.
+set(
+  ITK_CONFIG_CODE
+  "
+set(ITK_MODULES_DIR \"${ITK_MODULES_DIR}\")"
 )
 
+set(ITK_CONFIG_TARGETS_CONDITION " AND NOT ITK_BINARY_DIR")
+set(ITK_CONFIG_TARGETS_FILE "${ITK_BINARY_DIR}/ITKTargets.cmake")
+set(ITK_CONFIG_MODULE_API_FILE "${ITK_SOURCE_DIR}/CMake/ITKModuleAPI.cmake")
+configure_file(CMake/ITKConfig.cmake.in ITKConfig.cmake @ONLY)
+
+# Generate ITKConfig.cmake for the install tree.
+set(
+  ITK_CONFIG_CODE
+  "
+# Compute the installation prefix from this ITKConfig.cmake file location.
+get_filename_component(ITK_INSTALL_PREFIX \"\${CMAKE_CURRENT_LIST_FILE}\" PATH)"
+)
+# Construct the proper number of get_filename_component(... PATH)
+# calls to compute the installation prefix.
+string(REGEX REPLACE "/" ";" _count "${ITK_INSTALL_PACKAGE_DIR}")
+foreach(p ${_count})
+  set(
+    ITK_CONFIG_CODE
+    "${ITK_CONFIG_CODE}
+get_filename_component(ITK_INSTALL_PREFIX \"\${ITK_INSTALL_PREFIX}\" PATH)"
+  )
+endforeach()
+set(
+  ITK_CONFIG_CODE
+  "${ITK_CONFIG_CODE}
+set(ITK_MODULES_DIR \"\${ITK_INSTALL_PREFIX}/${ITK_INSTALL_PACKAGE_DIR}/Modules\")"
+)
+set(
+  ITK_USE_FILE
+  "\${ITK_INSTALL_PREFIX}/${ITK_INSTALL_PACKAGE_DIR}/UseITK.cmake"
+)
+set(ITK_CONFIG_CMAKE_DIR "\${ITK_INSTALL_PREFIX}/${ITK_INSTALL_PACKAGE_DIR}")
+set(ITK_CONFIG_TARGETS_CONDITION "")
+set(
+  ITK_CONFIG_TARGETS_FILE
+  "\${ITK_INSTALL_PREFIX}/${ITK_INSTALL_PACKAGE_DIR}/ITKTargets.cmake"
+)
+set(
+  ITK_CONFIG_MODULE_API_FILE
+  "\${ITK_INSTALL_PREFIX}/${ITK_INSTALL_PACKAGE_DIR}/ITKModuleAPI.cmake"
+)
+if(NOT ITK_USE_SYSTEM_FFTW)
+  # Location installed with the FFTW ExternalProject.
+  set(
+    FFTW_LIBDIR
+    "\${ITK_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/ITK-${ITK_VERSION_MAJOR}.${ITK_VERSION_MINOR}"
+  )
+  set(
+    FFTW_INCLUDE_PATH
+    "\${ITK_INSTALL_PREFIX}/include/ITK-${ITK_VERSION_MAJOR}.${ITK_VERSION_MINOR}/Algorithms"
+  )
+endif()
+configure_file(CMake/ITKConfig.cmake.in CMakeFiles/ITKConfig.cmake @ONLY)
+
 #-----------------------------------------------------------------------------
-# ITK_USE_SYSTEM_GDCM is provided so that you can use an installed or external
-# version of gdcm. If its on, you must specify the variables 
-# Important: INCLUDE(${GDCM_USE_FILE}) *has* to be set after the
-# INCLUDE_DIRECTORIES that sets all the include paths for ITK, otherwise
-# if GDCM was build with VTK support, including it will bring the VTK
-# include paths as well, and the wrong DICOMParser will be picked.
-
-OPTION(ITK_USE_SYSTEM_GDCM "Use an outside build of GDCM." OFF)
-MARK_AS_ADVANCED(ITK_USE_SYSTEM_GDCM)
-IF(ITK_USE_SYSTEM_GDCM)
-  FIND_PACKAGE(GDCM)
-  IF(GDCM_FOUND)
-    INCLUDE(${GDCM_USE_FILE})
-    IF( "${GDCM_MAJOR_VERSION}" LESS 2.0 )
-      SET(ITK_GDCM_LIBRARIES gdcm)
-    ELSE( "${GDCM_MAJOR_VERSION}" LESS 2.0 )
-      IF(ITK_USE_SYSTEM_TIFF)
-        # Long story short. ITKIO is NOT linked to itkjpeg8 explicitely. itkjpeg8 dep is being
-        # pulled from linking to itktiff. However in case of ITK_SYSTEM_TIFF the FindTIFF module
-        # do not explicitely link to the system jpeg. One can check however that on most GNU/Linux system
-        # $ ldd /usr/lib/libtiff.so
-        #    linux-vdso.so.1 =>  (0x00007fff67fff000)
-        #    libjpeg.so.62 => /usr/lib/libjpeg.so.62 (0x00007f635f9f2000)
-        # As a side note, ITK_SYSTEM_TIFF is somewhat robust as itkjpeg8 dep can also be pulled from
-        # linking to the default gdcm libraries since they use the itkjpeg libraries.
-        # I do not know the correct fix:
-        # 1. Have FindTIFF link to jpeg8 (which would be the right thing to do for static system libtiff)
-        # 2. Have ITKIO explicitely link to itkjpeg8
-        # For the time being let's explicitely pull the dep to itkjpeg8 ourselves.
-        SET(ITK_GDCM_LIBRARIES gdcmMSFF itkjpeg8)
-      ELSE(ITK_USE_SYSTEM_TIFF)
-        SET(ITK_GDCM_LIBRARIES gdcmMSFF)
-      ENDIF(ITK_USE_SYSTEM_TIFF)
-    ENDIF( "${GDCM_MAJOR_VERSION}" LESS 2.0 )
-  ELSE(GDCM_FOUND)
-    MESSAGE(FATAL_ERROR "Must set GDCM_DIR for ITK_USE_SYSTEM_GDCM.")
-  ENDIF(GDCM_FOUND)
-ELSE(ITK_USE_SYSTEM_GDCM)
-  SET(ITK_GDCM_LIBRARIES itkgdcm)
-  SET(GDCM_INCLUDE_DIR
-    ${ITK_SOURCE_DIR}/Utilities/gdcm/src
-    )
-ENDIF(ITK_USE_SYSTEM_GDCM)
-
-#-----------------------------------------------------------------------------
-# Help other projects use ITK.
-
-# Copy the UseITK.cmake file to the binary tree for backward compatability.
-CONFIGURE_FILE(${ITK_SOURCE_DIR}/UseITK.cmake.in
-               ${ITK_BINARY_DIR}/UseITK.cmake COPYONLY IMMEDIATE)
-
-# Save the compiler settings so another project can import them.
-INCLUDE(${CMAKE_ROOT}/Modules/CMakeExportBuildSettings.cmake)
-CMAKE_EXPORT_BUILD_SETTINGS(${ITK_BINARY_DIR}/ITKBuildSettings.cmake)
-
-# Save library dependencies.
-EXPORT_LIBRARY_DEPENDENCIES(${ITK_BINARY_DIR}/ITKLibraryDepends.cmake)
-
-# Create the ITKConfig.cmake file containing the ITK configuration.
-INCLUDE (${ITK_SOURCE_DIR}/itkGenerateITKConfig.cmake)
-
-IF(NOT ITK_INSTALL_NO_DEVELOPMENT)
-  INSTALL(FILES
-    ${ITK_BINARY_DIR}/ITKBuildSettings.cmake
-    ${ITK_BINARY_DIR}/ITKLibraryDepends.cmake
-    ${ITK_BINARY_DIR}/UseITK.cmake
-    DESTINATION ${ITK_INSTALL_PACKAGE_DIR_CM24}
+install(
+  FILES
+    ${ITK_BINARY_DIR}/CMakeFiles/ITKConfig.cmake
+    ${ITK_BINARY_DIR}/ITKConfigVersion.cmake
+    CMake/ITKModuleAPI.cmake
+    CMake/UseITK.cmake
+    CMake/ITKFactoryRegistration.cmake
+    CMake/itkFFTImageFilterInitFactoryRegisterManager.h.in
+    CMake/itkImageIOFactoryRegisterManager.h.in
+    CMake/itkTransformIOFactoryRegisterManager.h.in
+    CMake/itkMeshIOFactoryRegisterManager.h.in
+    CMake/ITKInitializeCXXStandard.cmake
+  DESTINATION ${ITK_INSTALL_PACKAGE_DIR}
+  COMPONENT Development
+)
+get_property(ITKTargets_MODULES GLOBAL PROPERTY ITKTargets_MODULES)
+if(ITKTargets_MODULES)
+  install(
+    EXPORT ITKTargets
+    DESTINATION ${ITK_INSTALL_PACKAGE_DIR}
     COMPONENT Development
-    )
-ENDIF(NOT ITK_INSTALL_NO_DEVELOPMENT)
+  )
+else()
+  set(CMAKE_CONFIGURABLE_FILE_CONTENT "# No targets!")
+  configure_file(
+    ${CMAKE_ROOT}/Modules/CMakeConfigurableFile.in
+    ${ITK_BINARY_DIR}/CMakeFiles/ITKTargets.cmake
+    @ONLY
+  )
+  install(
+    FILES
+      ${ITK_BINARY_DIR}/CMakeFiles/ITKTargets.cmake
+    DESTINATION ${ITK_INSTALL_PACKAGE_DIR}
+    COMPONENT Development
+  )
+endif()
+
+install(
+  FILES
+    "LICENSE"
+    "NOTICE"
+    "README.md"
+  DESTINATION ${ITK_INSTALL_DOC_DIR}
+  COMPONENT Runtime
+)
+
+if(BUILD_TESTING)
+  # If building the testing, write the test costs (i.e. time to run)
+  # analysis to disk to more easily review long-running test times
+  set(
+    CTEST_COST_DATA_FILE
+    "${CMAKE_BINARY_DIR}/test_cost.list"
+    CACHE FILEPATH
+    "Configurable path to CTest cost data file."
+  )
+  mark_as_advanced(CTEST_COST_DATA_FILE)
+  add_subdirectory(Utilities/InstallTest)
+endif()
 
 #-----------------------------------------------------------------------------
-# Add compiler flags ITK needs to work on this platform.  This must be
-# done AFTER the call to CMAKE_EXPORT_BUILD_SETTINGS.
+# The subdirectories added below this line should use only the public
+# interface with find_package(ITK). Set ITK_DIR to use this ITK build.
+set(ITK_DIR "${ITK_BINARY_DIR}")
 
-SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${ITK_REQUIRED_C_FLAGS}")
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${ITK_REQUIRED_CXX_FLAGS}")
-SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${ITK_REQUIRED_LINK_FLAGS}")
-SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${ITK_REQUIRED_LINK_FLAGS}")
-SET(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} ${ITK_REQUIRED_LINK_FLAGS}")
-#-----------------------------------------------------------------------------
-# The frename-registers option does not work due to a bug in the gnu compiler.
-# It must be removed or data errors will be produced and incorrect results
-# will be produced.  This is first documented in the gcc4 man page.
-IF(CMAKE_COMPILER_IS_GNUCXX)
-  SET(ALL_FLAGS "${CMAKE_C_FLAGS} ${CMAKE_CXX_FLAGS} ${CMAKE_EXE_LINKER_FLAGS} ${CMAKE_SHARED_LINKER_FLAGS} ${CMAKE_MODULE_LINKER_FLAGS}" )
-  SEPARATE_ARGUMENTS(ALL_FLAGS)
-  FOREACH(COMP_OPTION ${ALL_FLAGS})
-    IF("${COMP_OPTION}" STREQUAL "-frename-registers")
-      MESSAGE(FATAL_ERROR "-frename-registers causes runtime bugs.  It must be removed from your compilation options.")
-    ENDIF("${COMP_OPTION}" STREQUAL "-frename-registers")
-    IF("${COMP_OPTION}" STREQUAL "-ffloat-store")
-      MESSAGE(FATAL_ERROR "-ffloat-store causes runtime bugs on gcc 3.2.3 (appearently not on gcc 3.4.3, but the exact criteria is not known).  It must be removed from your compilation options.")
-    ENDIF("${COMP_OPTION}" STREQUAL "-ffloat-store")
-  ENDFOREACH(COMP_OPTION)
-ENDIF(CMAKE_COMPILER_IS_GNUCXX)
+if(ITK_WRAPPING)
+  add_subdirectory(Wrapping)
+endif()
 
+if(BUILD_EXAMPLES)
+  add_subdirectory(Examples)
+endif()
+
+#----------------------------------------------------------------------
+# Provide an option for generating documentation.
+add_subdirectory(Utilities/Doxygen)
+
+# Create target to download data from the ITKData group. This must come after
+# all tests have been added that reference the group, so we put it last.
+include(ExternalData)
+ExternalData_Add_Target(ITKData)
+
+mark_as_advanced(
+  FORCE
+  Module_AdaptiveDenoising
+  Module_AnalyzeObjectLabelMap
+  Module_AnisotropicDiffusionLBR
+  Module_BioCell
+  Module_BoneEnhancement
+  Module_BoneMorphometry
+  Module_BSplineGradient
+  Module_Cleaver
+  Module_Cuberille
+  Module_CudaCommon
+  Module_FixedPointInverseDisplacementField
+  Module_GenericLabelInterpolator
+  Module_GrowCut
+  Module_HASI
+  Module_HigherOrderAccurateGradient
+  Module_IOFDF
+  Module_IOMeshSTL
+  Module_IOOpenSlide
+  Module_IOScanco
+  Module_IOTransformDCMTK
+  Module_IsotropicWavelets
+  Module_LabelErodeDilate
+  Module_LesionSizingToolkit
+  Module_MeshNoise
+  Module_MeshToPolyData
+  Module_MGHIO
+  Module_MinimalPathExtraction
+  Module_Montage
+  Module_MorphologicalContourInterpolation
+  Module_MultipleImageIterator
+  Module_ParabolicMorphology
+  Module_PerformanceBenchmarking
+  Module_PhaseSymmetry
+  Module_PolarTransform
+  Module_PrincipalComponentsAnalysis
+  Module_RLEImage
+  Module_RTK
+  Module_SCIFIO
+  Module_Shape
+  Module_SimpleITKFilters
+  Module_SkullStrip
+  Module_SmoothingRecursiveYvvGaussianFilter
+  Module_SphinxExamples
+  Module_SplitComponents
+  Module_Strain
+  Module_SubdivisionQuadEdgeMeshFilter
+  Module_TextureFeatures
+  Module_Thickness3D
+  Module_TotalVariation
+  Module_TubeTK
+  Module_TwoProjectionRegistration
+  Module_Ultrasound
+  Module_VariationalRegistration
+  Module_VkFFTBackend
+  Module_WebAssemblyInterface
+)
+
+mark_as_advanced(
+  FORCE
+  NSIS_EXECUTABLE
+  WIX_EXECUTABLE
+)
+
+# Create an IDE folder structure similar to our source structure
+if("${CMAKE_GENERATOR}" MATCHES "Xcode|Visual Studio|KDevelop")
+  set_property(
+    GLOBAL
+    PROPERTY
+      USE_FOLDERS
+        ON
+  )
+  function(itk_organize_targets dir folder)
+    itk_get_all_targets_recursive(targets ${dir})
+    foreach(t ${targets})
+      # INTERFACE_LIBRARY warns about non-whitelisted properties for CMake < 3.19
+      get_target_property(type ${t} TYPE)
+      if(NOT "${type}" STREQUAL "INTERFACE_LIBRARY")
+        get_target_property(f ${t} SOURCE_DIR)
+        string(REPLACE ${dir} "" f ${f})
+        set_target_properties(
+          ${t}
+          PROPERTIES
+            FOLDER
+              "${folder}/${f}"
+        )
+      endif()
+    endforeach()
+  endfunction()
+  macro(itk_get_all_targets_recursive targets dir)
+    get_property(subdirectories DIRECTORY ${dir} PROPERTY SUBDIRECTORIES)
+    foreach(subdir ${subdirectories})
+      itk_get_all_targets_recursive(${targets} ${subdir})
+    endforeach()
+    get_property(current_targets DIRECTORY ${dir} PROPERTY BUILDSYSTEM_TARGETS)
+    list(APPEND ${targets} ${current_targets})
+  endmacro()
+  itk_organize_targets(${CMAKE_SOURCE_DIR} ITK)
+endif()

@@ -1,40 +1,34 @@
 /*=========================================================================
-
-  Program:   Insight Segmentation & Registration Toolkit
-  Module:    GibbsPriorImageFilter1.cxx
-  Language:  C++
-  Date:      $Date$
-  Version:   $Revision$
-
-  Copyright (c) Insight Software Consortium. All rights reserved.
-  See ITKCopyright.txt or http://www.itk.org/HTML/Copyright.htm for details.
-
-     This software is distributed WITHOUT ANY WARRANTY; without even 
-     the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR 
-     PURPOSE.  See the above copyright notices for more information.
-
-=========================================================================*/
-#if defined(_MSC_VER)
-#pragma warning ( disable : 4786 )
-#endif
-
-#ifdef __BORLANDC__
-#define ITK_LEAN_AND_MEAN
-#endif
+ *
+ *  Copyright NumFOCUS
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *         https://www.apache.org/licenses/LICENSE-2.0.txt
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *
+ *=========================================================================*/
 
 // Software Guide : BeginLatex
 //
-// This example illustrates the use of the \doxygen{RGBGibbsPriorFilter}.  
+// This example illustrates the use of the \doxygen{RGBGibbsPriorFilter}.
 // The filter outputs a binary segmentation that can be improved by the
 // deformable model. It is the first part of our hybrid framework.
 //
 // First, we include the appropriate header file.
 //
-// Software Guide : EndLatex 
+// Software Guide : EndLatex
 
 #include <iostream>
 #include <string>
-#include <math.h>
+#include <cmath>
 
 // Software Guide : BeginCodeSnippet
 #include "itkRGBGibbsPriorFilter.h"
@@ -50,227 +44,209 @@
 #include "itkSize.h"
 #include "itkImage.h"
 #include "itkVector.h"
-#include "itkImageRegionIterator.h"
 #include "itkImageFileReader.h"
 #include "itkImageFileWriter.h"
 
-#define   NUM_CLASSES         3
-#define   MAX_NUM_ITER        1
+constexpr int NUM_CLASSES = 3;
+constexpr int MAX_NUM_ITER = 1;
 
-int main( int argc, char *argv[] )
+int
+main(int argc, char * argv[])
 {
-  if( argc != 4 )
-    {
+  if (argc != 4)
+  {
     std::cerr << "Missing Parameters " << std::endl;
     std::cerr << "Usage: " << argv[0];
     std::cerr << " inputImage trainimage outputImage" << std::endl;
-    return 1;
-    }
+    return EXIT_FAILURE;
+  }
 
-  std::cout<< "Gibbs Prior Test Begins: " << std::endl;
+  std::cout << "Gibbs Prior Test Begins: " << std::endl;
 
   //  Software Guide : BeginLatex
   //
-  //  The input is a single channel 2D image; the channel number is  
+  //  The input is a single channel 2D image; the channel number is
   //  \code{NUMBANDS} = 1, and \code{NDIMENSION} is set to 3.
   //
   //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  const unsigned short NUMBANDS = 1;
-  const unsigned short NDIMENSION = 3;
+  constexpr unsigned short NUMBANDS = 1;
+  constexpr unsigned short NDIMENSION = 3;
 
-  typedef itk::Image<itk::Vector<unsigned short,NUMBANDS>,NDIMENSION> VecImageType; 
-  // Software Guide : EndCodeSnippet  
+  using VecImageType =
+    itk::Image<itk::Vector<unsigned short, NUMBANDS>, NDIMENSION>;
+  // Software Guide : EndCodeSnippet
 
   //  Software Guide : BeginLatex
-  //  
+  //
   //  The Gibbs prior segmentation is performed first to generate a rough
   //  segmentation that yields a sample of tissue from a region to be
   //  segmented, which will be combined to form the input for the
   //  isocontouring method. We define the pixel type of the output of the
   //  Gibbs prior filter to be \code{unsigned short}.
   //
-  //  Software Guide : EndLatex 
-  
+  //  Software Guide : EndLatex
+
   // Software Guide : BeginCodeSnippet
-  typedef itk::Image< unsigned short, NDIMENSION > ClassImageType;
+  using ClassImageType = itk::Image<unsigned short, NDIMENSION>;
   // Software Guide : EndCodeSnippet
 
-
-  // We instantiate reader and writer types
-  //
-  typedef  itk::ImageFileReader< ClassImageType >   ReaderType;
-  typedef  itk::ImageFileWriter<  ClassImageType  > WriterType;
-
-  ReaderType::Pointer inputimagereader = ReaderType::New();
-  ReaderType::Pointer trainingimagereader = ReaderType::New();
-  WriterType::Pointer writer = WriterType::New();
-
-  inputimagereader->SetFileName( argv[1] );
-  trainingimagereader->SetFileName( argv[2] );
-  writer->SetFileName( argv[3] );
-
+  const auto input_image = itk::ReadImage<ClassImageType>(argv[1]);
+  const auto training_image = itk::ReadImage<ClassImageType>(argv[2]);
 
   // We convert the input into vector images
-  //  
-  VecImageType::Pointer vecImage = VecImageType::New();
-  typedef VecImageType::PixelType VecImagePixelType;
-  VecImageType::SizeType vecImgSize = { {181 , 217, 1} };
+  //
+  auto vecImage = VecImageType::New();
+  using VecImagePixelType = VecImageType::PixelType;
+  constexpr VecImageType::SizeType vecImgSize = { { 181, 217, 1 } };
 
-  VecImageType::IndexType index;
-  index.Fill(0);
+  constexpr VecImageType::IndexType index{};
 
   VecImageType::RegionType region;
 
-  region.SetSize( vecImgSize );
-  region.SetIndex( index );
+  region.SetSize(vecImgSize);
+  region.SetIndex(index);
 
-  vecImage->SetLargestPossibleRegion( region );
-  vecImage->SetBufferedRegion( region );
+  vecImage->SetLargestPossibleRegion(region);
+  vecImage->SetBufferedRegion(region);
   vecImage->Allocate();
 
-  // setup the iterators
-  typedef VecImageType::PixelType::VectorType VecPixelType;
+  enum
+  {
+    VecImageDimension = VecImageType::ImageDimension
+  };
+  using VecIterator = itk::ImageRegionIterator<VecImageType>;
 
-  enum { VecImageDimension = VecImageType::ImageDimension };
-  typedef itk::ImageRegionIterator< VecImageType > VecIterator;
-
-  VecIterator vecIt( vecImage, vecImage->GetBufferedRegion() );
+  VecIterator vecIt(vecImage, vecImage->GetBufferedRegion());
   vecIt.GoToBegin();
 
-  inputimagereader->Update();
-  trainingimagereader->Update();
+  using ClassIterator = itk::ImageRegionIterator<ClassImageType>;
 
-  typedef itk::ImageRegionIterator< ClassImageType > ClassIterator;
-
-  ClassIterator inputIt( inputimagereader->GetOutput(), inputimagereader->GetOutput()->GetBufferedRegion() );
+  ClassIterator inputIt(input_image, input_image->GetBufferedRegion());
   inputIt.GoToBegin();
 
-  //Set up the vector to store the image  data
-  typedef VecImageType::PixelType     DataVector;
-  DataVector   dblVec; 
+  // Set up the vector to store the image  data
+  using DataVector = VecImageType::PixelType;
+  DataVector dblVec;
 
-  while ( !vecIt.IsAtEnd() ) 
-    { 
+  while (!vecIt.IsAtEnd())
+  {
     dblVec[0] = inputIt.Get();
-    vecIt.Set(dblVec); 
+    vecIt.Set(dblVec);
     ++vecIt;
     ++inputIt;
-    }
+  }
 
   //----------------------------------------------------------------------
-  //Set membership function (Using the statistics objects)
+  // Set membership function (Using the statistics objects)
   //----------------------------------------------------------------------
 
   namespace stat = itk::Statistics;
 
-  typedef VecImageType::PixelType         VecImagePixelType;
-  typedef stat::MahalanobisDistanceMembershipFunction< VecImagePixelType > 
-                                          MembershipFunctionType;
-  typedef MembershipFunctionType::Pointer MembershipFunctionPointer;
+  using VecImagePixelType = VecImageType::PixelType;
+  using MembershipFunctionType =
+    stat::MahalanobisDistanceMembershipFunction<VecImagePixelType>;
+  using MembershipFunctionPointer = MembershipFunctionType::Pointer;
 
-  typedef std::vector< MembershipFunctionPointer > 
-    MembershipFunctionPointerVector;  
+  using MembershipFunctionPointerVector =
+    std::vector<MembershipFunctionPointer>;
 
   //----------------------------------------------------------------------
   // Set the image model estimator (train the class models)
   //----------------------------------------------------------------------
 
-  typedef itk::ImageGaussianModelEstimator<VecImageType,
-    MembershipFunctionType, ClassImageType> 
-    ImageGaussianModelEstimatorType;
-  
-  ImageGaussianModelEstimatorType::Pointer 
-    applyEstimateModel = ImageGaussianModelEstimatorType::New();  
+  using ImageGaussianModelEstimatorType =
+    itk::ImageGaussianModelEstimator<VecImageType,
+                                     MembershipFunctionType,
+                                     ClassImageType>;
+
+  auto applyEstimateModel = ImageGaussianModelEstimatorType::New();
 
   applyEstimateModel->SetNumberOfModels(NUM_CLASSES);
   applyEstimateModel->SetInputImage(vecImage);
-  applyEstimateModel->SetTrainingImage(trainingimagereader->GetOutput());  
+  applyEstimateModel->SetTrainingImage(training_image);
 
 
-  //Run the gaussian classifier algorithm
+  // Run the gaussian classifier algorithm
   applyEstimateModel->Update();
 
   std::cout << " site 1 " << std::endl;
-  
-  applyEstimateModel->Print(std::cout); 
 
-  MembershipFunctionPointerVector membershipFunctions = 
+  applyEstimateModel->Print(std::cout);
+
+  MembershipFunctionPointerVector membershipFunctions =
     applyEstimateModel->GetMembershipFunctions();
 
   std::cout << " site 2 " << std::endl;
 
   //----------------------------------------------------------------------
-  //Set the decision rule 
-  //----------------------------------------------------------------------  
-  typedef itk::DecisionRuleBase::Pointer DecisionRuleBasePointer;
+  // Set the decision rule
+  //----------------------------------------------------------------------
+  using DecisionRuleBasePointer = itk::Statistics::DecisionRule::Pointer;
 
-  typedef itk::MinimumDecisionRule DecisionRuleType;
-  DecisionRuleType::Pointer  myDecisionRule = DecisionRuleType::New();
+  using DecisionRuleType = itk::Statistics::MinimumDecisionRule;
+  auto myDecisionRule = DecisionRuleType::New();
 
   std::cout << " site 3 " << std::endl;
 
   //----------------------------------------------------------------------
-  // Set the classifier to be used and assigne the parameters for the 
-  // supervised classifier algorithm except the input image which is 
+  // Set the classifier to be used and assigned the parameters for the
+  // supervised classifier algorithm except the input image which is
   // grabbed from the Gibbs application pipeline.
   //----------------------------------------------------------------------
   //---------------------------------------------------------------------
-  typedef VecImagePixelType MeasurementVectorType;
 
   //  Software Guide : BeginLatex
-  //  
+  //
   //  Then we define the classifier that is needed
   //  for the Gibbs prior model to make correct segmenting decisions.
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
-  // Software Guide : BeginCodeSnippet 
-  typedef itk::ImageClassifierBase< VecImageType, ClassImageType > ClassifierType;
-  typedef itk::ClassifierBase<VecImageType>::Pointer ClassifierBasePointer;
-
-  typedef ClassifierType::Pointer ClassifierPointer;
-  ClassifierPointer myClassifier = ClassifierType::New();
-  // Software Guide : EndCodeSnippet 
+  // Software Guide : BeginCodeSnippet
+  using ClassifierType =
+    itk::ImageClassifierBase<VecImageType, ClassImageType>;
+  using ClassifierPointer = ClassifierType::Pointer;
+  const ClassifierPointer myClassifier = ClassifierType::New();
+  // Software Guide : EndCodeSnippet
 
   // Set the Classifier parameters
   myClassifier->SetNumberOfClasses(NUM_CLASSES);
 
-  // Set the decison rule 
-  myClassifier->SetDecisionRule((DecisionRuleBasePointer) myDecisionRule );
+  // Set the decision rule
+  myClassifier->SetDecisionRule((DecisionRuleBasePointer)myDecisionRule);
 
-  //Add the membership functions
-  for( unsigned int i=0; i<NUM_CLASSES; i++ )
-    {
-    myClassifier->AddMembershipFunction( membershipFunctions[i] );
-    }
+  // Add the membership functions
+  for (unsigned int i = 0; i < NUM_CLASSES; ++i)
+  {
+    myClassifier->AddMembershipFunction(membershipFunctions[i]);
+  }
 
-  //Set the Gibbs Prior labeller
+  // Set the Gibbs Prior labeler
   //  Software Guide : BeginLatex
-  //  
-  //  After that we can define the multi-channel Gibbs prior model. 
   //
-  //  Software Guide : EndLatex 
+  //  After that we can define the multi-channel Gibbs prior model.
+  //
+  //  Software Guide : EndLatex
 
-  // Software Guide : BeginCodeSnippet 
-  typedef itk::RGBGibbsPriorFilter<VecImageType,ClassImageType> 
-    GibbsPriorFilterType;
-  GibbsPriorFilterType::Pointer applyGibbsImageFilter = 
-    GibbsPriorFilterType::New();
-  // Software Guide : EndCodeSnippet 
+  // Software Guide : BeginCodeSnippet
+  using GibbsPriorFilterType =
+    itk::RGBGibbsPriorFilter<VecImageType, ClassImageType>;
+  auto applyGibbsImageFilter = GibbsPriorFilterType::New();
+  // Software Guide : EndCodeSnippet
 
-  // Set the MRF labeller parameters
+  // Set the MRF labeler parameters
   //  Software Guide : BeginLatex
-  //  
+  //
   //  The parameters for the Gibbs prior filter are defined
-  //  below. \code{NumberOfClasses} indicates how many different objects are in
-  //  the image.  The maximum number of iterations is the number of
+  //  below. \code{NumberOfClasses} indicates how many different objects are
+  //  in the image.  The maximum number of iterations is the number of
   //  minimization steps.  \code{ClusterSize} sets the lower limit on the
   //  object's size.  The boundary gradient is the estimate of the variance
   //  between objects and background at the boundary region.
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
   applyGibbsImageFilter->SetNumberOfClasses(NUM_CLASSES);
@@ -278,28 +254,28 @@ int main( int argc, char *argv[] )
   applyGibbsImageFilter->SetClusterSize(10);
   applyGibbsImageFilter->SetBoundaryGradient(6);
   applyGibbsImageFilter->SetObjectLabel(1);
-  // Software Guide : EndCodeSnippet 
-  
+  // Software Guide : EndCodeSnippet
+
   //  Software Guide : BeginLatex
-  //  
+  //
   //  We now set the input classifier for the Gibbs prior filter and the
   //  input to the classifier. The classifier will calculate the mean and
   //  variance of the object using the class image, and the results will be
   //  used as parameters for the Gibbs prior model.
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
   applyGibbsImageFilter->SetInput(vecImage);
-  applyGibbsImageFilter->SetClassifier( myClassifier ); 
-  applyGibbsImageFilter->SetTrainingImage(trainingimagereader->GetOutput());  
+  applyGibbsImageFilter->SetClassifier(myClassifier);
+  applyGibbsImageFilter->SetTrainingImage(training_image);
   // Software Guide : EndCodeSnippet
 
   //  Software Guide : BeginLatex
-  //  
+  //
   //  Finally we execute the Gibbs prior filter using the Update() method.
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
   applyGibbsImageFilter->Update();
@@ -307,27 +283,27 @@ int main( int argc, char *argv[] )
 
   std::cout << "applyGibbsImageFilter: " << applyGibbsImageFilter;
 
-  writer->SetInput( applyGibbsImageFilter->GetOutput() );
-  writer->Update();
+  itk::WriteImage(applyGibbsImageFilter->GetOutput(), argv[3]);
 
   //  Software Guide : BeginLatex
   //
   //  We execute this program on the image \code{brainweb89.png}. The
   //  following parameters are passed to the command line:
-  // 
+  //
   //  \small
   //  \begin{verbatim}
-  //GibbsGuide.exe brainweb89.png brainweb89_train.png brainweb_gp.png
+  // GibbsGuide.exe brainweb89.png brainweb89_train.png brainweb_gp.png
   //  \end{verbatim}
   //  \normalsize
   //
-  //  \code{brainweb89train} is a training image that helps to estimate the object statistics.
+  //  \code{brainweb89train} is a training image that helps to estimate the
+  //  object statistics.
   //
   //  Note that in order to successfully segment other images, one has to
   //  create suitable training images for them. We can also segment color
   //  (RGB) and other multi-channel images.
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
-  return 0;
+  return EXIT_SUCCESS;
 }
