@@ -1,26 +1,20 @@
 /*=========================================================================
-
-  Program:   Insight Segmentation & Registration Toolkit
-  Module:    LaplacianImageFilter.cxx
-  Language:  C++
-  Date:      $Date$
-  Version:   $Revision$
-
-  Copyright (c) Insight Software Consortium. All rights reserved.
-  See ITKCopyright.txt or http://www.itk.org/HTML/Copyright.htm for details.
-
-     This software is distributed WITHOUT ANY WARRANTY; without even 
-     the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR 
-     PURPOSE.  See the above copyright notices for more information.
-
-=========================================================================*/
-#if defined(_MSC_VER)
-#pragma warning ( disable : 4786 )
-#endif
-
-#ifdef __BORLANDC__
-#define ITK_LEAN_AND_MEAN
-#endif
+ *
+ *  Copyright NumFOCUS
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *         https://www.apache.org/licenses/LICENSE-2.0.txt
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *
+ *=========================================================================*/
 
 #include "itkLaplacianImageFilter.h"
 #include "itkZeroCrossingBasedEdgeDetectionImageFilter.h"
@@ -29,84 +23,85 @@
 #include "itkCastImageFilter.h"
 #include "itkRescaleIntensityImageFilter.h"
 
-int main(int argc, char* argv[])
+int
+main(int argc, char * argv[])
 {
-  if( argc < 3)
-    {
+  if (argc < 3)
+  {
     std::cerr << "Usage: " << std::endl;
     std::cerr << argv[0] << " inputImage outputImage " << std::endl;
     return EXIT_FAILURE;
-    }
-   
-  const char * inputFilename  = argv[1];
+  }
+
+  const char * inputFilename = argv[1];
   const char * outputFilename = argv[2];
 
-  typedef unsigned char    CharPixelType;  //IO
-  typedef double          RealPixelType;  //Operations
+  using CharPixelType = unsigned char; // IO
+  using RealPixelType = double;        // Operations
 
-  const    unsigned int    Dimension = 2;
+  constexpr unsigned int Dimension = 2;
 
-  typedef itk::Image<CharPixelType, Dimension>    CharImageType;
-  typedef itk::Image<RealPixelType, Dimension>    RealImageType;
-  
-  typedef itk::ImageFileReader< CharImageType >  ReaderType;
-  typedef itk::ImageFileWriter< CharImageType >  WriterType;
+  using CharImageType = itk::Image<CharPixelType, Dimension>;
+  using RealImageType = itk::Image<RealPixelType, Dimension>;
 
-  typedef itk::CastImageFilter<CharImageType, RealImageType> CastToRealFilterType;
-  typedef itk::CastImageFilter<RealImageType, CharImageType> CastToCharFilterType;
+  using ReaderType = itk::ImageFileReader<CharImageType>;
+  using WriterType = itk::ImageFileWriter<CharImageType>;
 
-  typedef itk::RescaleIntensityImageFilter<RealImageType, RealImageType> RescaleFilter;
-  
-  typedef itk::LaplacianImageFilter< 
-                              RealImageType, 
-                              RealImageType >    LaplacianFilter;
+  using CastToRealFilterType =
+    itk::CastImageFilter<CharImageType, RealImageType>;
+  using CastToCharFilterType =
+    itk::CastImageFilter<RealImageType, CharImageType>;
 
-  typedef itk::ZeroCrossingImageFilter<
-                              RealImageType, 
-                              RealImageType>     ZeroCrossingFilter;
+  using RescaleFilter =
+    itk::RescaleIntensityImageFilter<RealImageType, RealImageType>;
 
-  //Setting the IO
-  ReaderType::Pointer reader = ReaderType::New();
-  WriterType::Pointer writer = WriterType::New();
+  using LaplacianFilter =
+    itk::LaplacianImageFilter<RealImageType, RealImageType>;
 
-  CastToRealFilterType::Pointer toReal = CastToRealFilterType::New();
-  CastToCharFilterType::Pointer toChar = CastToCharFilterType::New();
-  RescaleFilter::Pointer rescale = RescaleFilter::New();
+  using ZeroCrossingFilter =
+    itk::ZeroCrossingImageFilter<RealImageType, RealImageType>;
 
-  //Setting the ITK pipeline filter
-  
-  LaplacianFilter::Pointer lapFilter = LaplacianFilter::New();
-  ZeroCrossingFilter::Pointer zeroFilter = ZeroCrossingFilter::New();  
-  
-  reader->SetFileName( inputFilename  );
-  writer->SetFileName( outputFilename );
+  // Setting the IO
+  auto reader = ReaderType::New();
+  auto writer = WriterType::New();
 
-  //The output of an edge filter is 0 or 1
-  rescale->SetOutputMinimum(   0 );
-  rescale->SetOutputMaximum( 255 );
+  auto toReal = CastToRealFilterType::New();
+  auto toChar = CastToCharFilterType::New();
+  auto rescale = RescaleFilter::New();
 
-  toReal->SetInput( reader->GetOutput() );
-  toChar->SetInput( rescale->GetOutput() );
-  writer->SetInput( toChar->GetOutput() );
+  // Setting the ITK pipeline filter
 
-  //Edge Detection by Laplacian Image Filter:
+  auto lapFilter = LaplacianFilter::New();
+  auto zeroFilter = ZeroCrossingFilter::New();
 
-  lapFilter->SetInput( toReal->GetOutput() );
-  zeroFilter->SetInput( lapFilter->GetOutput() );
-  rescale->SetInput( zeroFilter->GetOutput() );
+  reader->SetFileName(inputFilename);
+  writer->SetFileName(outputFilename);
+
+  // The output of an edge filter is 0 or 1
+  rescale->SetOutputMinimum(0);
+  rescale->SetOutputMaximum(255);
+
+  toReal->SetInput(reader->GetOutput());
+  toChar->SetInput(rescale->GetOutput());
+  writer->SetInput(toChar->GetOutput());
+
+  // Edge Detection by Laplacian Image Filter:
+
+  lapFilter->SetInput(toReal->GetOutput());
+  zeroFilter->SetInput(lapFilter->GetOutput());
+  rescale->SetInput(zeroFilter->GetOutput());
 
 
   try
-    {
+  {
     writer->Update();
-    }
-  catch( itk::ExceptionObject & err )
-    { 
-    std::cout << "ExceptionObject caught !" << std::endl; 
-    std::cout << err << std::endl; 
+  }
+  catch (const itk::ExceptionObject & err)
+  {
+    std::cout << "ExceptionObject caught !" << std::endl;
+    std::cout << err << std::endl;
     return EXIT_FAILURE;
-    } 
+  }
 
   return EXIT_SUCCESS;
-
 }

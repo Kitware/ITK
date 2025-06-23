@@ -1,3 +1,21 @@
+# ==========================================================================
+#
+#   Copyright NumFOCUS
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#          https://www.apache.org/licenses/LICENSE-2.0.txt
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+#
+# ==========================================================================*/
+
 # This file demonstrates how to connect VTK and ITK pipelines together
 # in scripted languages with the new ConnectVTKITK wrapping functionality.
 # Data is loaded in with VTK, processed with ITK and written back to disc
@@ -42,16 +60,18 @@ itkImporter = itk.itkVTKImageImportF2_New()
 CVIPy.ConnectVTKToITKF2(vtkExporter, itkImporter.GetPointer())
 
 # perform a canny edge detection and rescale the output
-canny  = itk.itkCannyEdgeDetectionImageFilterF2F2_New()
+canny = itk.itkCannyEdgeDetectionImageFilterF2F2_New()
 rescaler = itk.itkRescaleIntensityImageFilterF2US2_New()
 canny.SetInput(itkImporter.GetOutput())
 rescaler.SetInput(canny.GetOutput())
 rescaler.SetOutputMinimum(0)
 rescaler.SetOutputMaximum(65535)
 
+
 # this is to show off the new PyCommand functionality. :)
 def progressEvent():
-    print "%.0f%s done..." % (canny.GetProgress() * 100.0, '%')
+    print(f"{canny.GetProgress() * 100.0:.0f}{'%'} done...")
+
 
 pc = itk.itkPyCommand_New()
 pc.SetCommandCallable(progressEvent)
@@ -66,11 +86,11 @@ itkExporter.SetInput(rescaler.GetOutput())
 vtkImporter = vtk.vtkImageImport()
 # do the magic connection call (once again: only available if you built
 # ITK with ITK_CSWIG_CONNECTVTKITK set to ON)
-CVIPy.ConnectITKUS2ToVTK(itkExporter.GetPointer(), vtkImporter)
+CVIPy.ConnectITKUS2ToVTK(itkExporter, vtkImporter)
 
 # finally write the image to disk using VTK
 writer = vtk.vtkPNGWriter()
-writer.SetFileName('./testout.png')
+writer.SetFileName("./testout.png")
 writer.SetInput(vtkImporter.GetOutput())
 
 # before we call Write() on the writer, it is prudent to give
@@ -84,4 +104,4 @@ rescaler.Update()
 # write the file to disk...
 writer.Write()
 
-print "\n\nWrote testout.png to current directory."
+print("\n\nWrote testout.png to current directory.")

@@ -1,26 +1,20 @@
 /*=========================================================================
-
-  Program:   Insight Segmentation & Registration Toolkit
-  Module:    CovariantVectorImageWrite.cxx
-  Language:  C++
-  Date:      $Date$
-  Version:   $Revision$
-
-  Copyright (c) Insight Software Consortium. All rights reserved.
-  See ITKCopyright.txt or http://www.itk.org/HTML/Copyright.htm for details.
-
-     This software is distributed WITHOUT ANY WARRANTY; without even 
-     the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR 
-     PURPOSE.  See the above copyright notices for more information.
-
-=========================================================================*/
-#if defined(_MSC_VER)
-#pragma warning ( disable : 4786 )
-#endif
-
-#ifdef __BORLANDC__
-#define ITK_LEAN_AND_MEAN
-#endif
+ *
+ *  Copyright NumFOCUS
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *         https://www.apache.org/licenses/LICENSE-2.0.txt
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *
+ *=========================================================================*/
 
 //  Software Guide : BeginLatex
 //
@@ -42,7 +36,7 @@
 //
 //  \index{ImageFileWriter!Vector images}
 //
-//  Software Guide : EndLatex 
+//  Software Guide : EndLatex
 
 // Software Guide : BeginCodeSnippet
 #include "itkImageFileReader.h"
@@ -51,139 +45,137 @@
 
 
 //  Software Guide : BeginLatex
-//  
+//
 //  We use the \doxygen{GradientRecursiveGaussianImageFilter} in order to
 //  compute the image gradient. The output of this filter is an image whose
 //  pixels are CovariantVectors.
 //
 //  \index{itk::Gradient\-Recursive\-Gaussian\-Image\-Filter!header}
 //
-//  Software Guide : EndLatex 
+//  Software Guide : EndLatex
 
 // Software Guide : BeginCodeSnippet
 #include "itkGradientRecursiveGaussianImageFilter.h"
 // Software Guide : EndCodeSnippet
 
 
-#include "itkImage.h"
-
-
-int main( int argc, char ** argv )
+int
+main(int argc, char ** argv)
 {
   // Verify the number of parameters in the command line
-  if( argc < 3 )
-    {
+  if (argc < 3)
+  {
     std::cerr << "Usage: " << std::endl;
-    std::cerr << argv[0] << " inputImageFile  outputVectorImageFile " << std::endl;
+    std::cerr << argv[0] << " inputImageFile  outputVectorImageFile "
+              << std::endl;
     return EXIT_FAILURE;
-    }
+  }
 
 
   //  Software Guide : BeginLatex
   //
-  //  We select to read an image of \code{signed short} pixels and compute the
-  //  gradient to produce an image of CovariantVector where each
+  //  We read an image of \code{short} pixels and compute the
+  //  gradient to produce an image of CovariantVectors where each
   //  component is of type \code{float}.
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  typedef signed short          InputPixelType;
-  typedef float                 ComponentType;
-  const   unsigned int          Dimension = 2;
+  using InputPixelType = short;
+  using ComponentType = float;
+  constexpr unsigned int Dimension = 2;
 
-  typedef itk::CovariantVector< ComponentType, 
-                                    Dimension  >      OutputPixelType;
+  using OutputPixelType = itk::CovariantVector<ComponentType, Dimension>;
 
-  typedef itk::Image< InputPixelType,  Dimension >    InputImageType;
-  typedef itk::Image< OutputPixelType, Dimension >    OutputImageType;
+  using InputImageType = itk::Image<InputPixelType, Dimension>;
+  using OutputImageType = itk::Image<OutputPixelType, Dimension>;
   // Software Guide : EndCodeSnippet
 
 
   //  Software Guide : BeginLatex
-  //  
+  //
   //  The \doxygen{ImageFileReader} and \doxygen{ImageFileWriter} are
   //  instantiated using the image types.
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  typedef itk::ImageFileReader< InputImageType  >  ReaderType;
-  typedef itk::ImageFileWriter< OutputImageType >  WriterType;
+  using ReaderType = itk::ImageFileReader<InputImageType>;
+  using WriterType = itk::ImageFileWriter<OutputImageType>;
   // Software Guide : EndCodeSnippet
 
 
   //  Software Guide : BeginLatex
-  //  
+  //
   //  The GradientRecursiveGaussianImageFilter class is instantiated
   //  using the input and output image types. A filter object is created with
-  //  the New() method and assigned to a \doxygen{SmartPointer}.
+  //  the \code{New()} method and assigned to a \doxygen{SmartPointer}.
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  typedef itk::GradientRecursiveGaussianImageFilter< 
-                                          InputImageType,
-                                          OutputImageType    > FilterType;
+  using FilterType =
+    itk::GradientRecursiveGaussianImageFilter<InputImageType,
+                                              OutputImageType>;
 
-  FilterType::Pointer filter = FilterType::New();
+  auto filter = FilterType::New();
   // Software Guide : EndCodeSnippet
 
 
   //  Software Guide : BeginLatex
-  //  
+  //
   //  We select a value for the $\sigma$ parameter of the
-  //  GradientRecursiveGaussianImageFilter. Note that this $\sigma$
-  //  is specified in millimeters.
+  //  GradientRecursiveGaussianImageFilter. Note that $\sigma$
+  //  for this filter is specified in millimeters.
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
-  
+
   // Software Guide : BeginCodeSnippet
-  filter->SetSigma( 1.5 );      // Sigma in millimeters
+  filter->SetSigma(1.5); // Sigma in millimeters
   // Software Guide : EndCodeSnippet
 
 
   //  Software Guide : BeginLatex
   //
-  //  Below, we create the reader and writer  using the New() method and
-  //  assigning the result to a SmartPointer.
+  //  Below, we create the reader and writer using the \code{New()} method and
+  //  assign the result to a \doxygen{SmartPointer}.
   //
   //  \index{itk::ImageFileReader!New()}
   //  \index{itk::ImageFileWriter!New()}
   //  \index{itk::ImageFileReader!SmartPointer}
   //  \index{itk::ImageFileWriter!SmartPointer}
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  ReaderType::Pointer reader = ReaderType::New();
-  WriterType::Pointer writer = WriterType::New();
+  auto reader = ReaderType::New();
+  auto writer = WriterType::New();
   // Software Guide : EndCodeSnippet
 
 
   //
   // Here we recover the file names from the command line arguments
   //
-  const char * inputFilename  = argv[1];
+  const char * inputFilename = argv[1];
   const char * outputFilename = argv[2];
 
 
   //  Software Guide : BeginLatex
   //
-  //  The name of the file to be read or written is passed with the
-  //  SetFileName() method. 
+  //  The name of the file to be read or written is passed to the
+  //  \code{SetFileName()} method.
   //
   //  \index{itk::ImageFileReader!SetFileName()}
   //  \index{itk::ImageFileWriter!SetFileName()}
   //  \index{SetFileName()!itk::ImageFileReader}
   //  \index{SetFileName()!itk::ImageFileWriter}
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  reader->SetFileName( inputFilename  );
-  writer->SetFileName( outputFilename );
+  reader->SetFileName(inputFilename);
+  writer->SetFileName(outputFilename);
   // Software Guide : EndCodeSnippet
 
 
@@ -192,33 +184,33 @@ int main( int argc, char ** argv )
   //  Below we connect the reader, filter and writer to form the data
   //  processing pipeline.
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  filter->SetInput( reader->GetOutput() );
-  writer->SetInput( filter->GetOutput() );
+  filter->SetInput(reader->GetOutput());
+  writer->SetInput(filter->GetOutput());
   // Software Guide : EndCodeSnippet
 
 
   //  Software Guide : BeginLatex
-  //  
-  //  Finally we execute the pipeline by invoking Update() on the writer. The
-  //  call is placed in a \code{try/catch} block in case exceptions are
-  //  thrown.
   //
-  //  Software Guide : EndLatex 
+  //  Finally we execute the pipeline by invoking \code{Update()} on the
+  //  writer. The call is placed in a \code{try/catch} block in case
+  //  exceptions are thrown.
+  //
+  //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  try 
-    { 
-    writer->Update(); 
-    } 
-  catch( itk::ExceptionObject & err ) 
-    { 
-    std::cerr << "ExceptionObject caught !" << std::endl; 
-    std::cerr << err << std::endl; 
+  try
+  {
+    writer->Update();
+  }
+  catch (const itk::ExceptionObject & err)
+  {
+    std::cerr << "ExceptionObject caught !" << std::endl;
+    std::cerr << err << std::endl;
     return EXIT_FAILURE;
-    } 
+  }
   // Software Guide : EndCodeSnippet
 
 

@@ -1,26 +1,20 @@
 /*=========================================================================
-
-  Program:   Insight Segmentation & Registration Toolkit
-  Module:    CompositeFilterExample.cxx
-  Language:  C++
-  Date:      $Date$
-  Version:   $Revision$
-
-  Copyright (c) Insight Software Consortium. All rights reserved.
-  See ITKCopyright.txt or http://www.itk.org/HTML/Copyright.htm for details.
-
-     This software is distributed WITHOUT ANY WARRANTY; without even
-     the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-     PURPOSE.  See the above copyright notices for more information.
-
-=========================================================================*/
-#if defined(_MSC_VER)
-#pragma warning ( disable : 4786 )
-#endif
-
-#ifdef __BORLANDC__
-#define ITK_LEAN_AND_MEAN
-#endif
+ *
+ *  Copyright NumFOCUS
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *         https://www.apache.org/licenses/LICENSE-2.0.txt
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *
+ *=========================================================================*/
 
 //  Software Guide : BeginLatex
 //
@@ -35,10 +29,6 @@
 //  identical type), we will specialize the ImageToImageFilter:
 //
 //  Software Guide : EndLatex
-
-//  Software Guide : BeginCodeSnippet
-#include "itkImageToImageFilter.h"
-//  Software Guide : EndCodeSnippet
 
 //  Software Guide : BeginLatex
 //
@@ -58,7 +48,7 @@
 //
 //  Now we can declare the filter itself.  It is within the ITK namespace,
 //  and we decide to make it use the same image type for both input and
-//  output, thus the template declaration needs only one parameter.
+//  output, so that the template declaration needs only one parameter.
 //  Deriving from \code{ImageToImageFilter} provides default behavior for
 //  several important aspects, notably allocating the output image (and
 //  making it the same dimensions as the input).
@@ -66,101 +56,98 @@
 //  Software Guide : EndLatex
 
 //  Software Guide : BeginCodeSnippet
-namespace itk {
+namespace itk
+{
 
-template <class TImageType>
-class ITK_EXPORT CompositeExampleImageFilter :
-    public ImageToImageFilter<TImageType, TImageType>
+template <typename TImage>
+class CompositeExampleImageFilter : public ImageToImageFilter<TImage, TImage>
 {
 public:
-//  Software Guide : EndCodeSnippet
+  ITK_DISALLOW_COPY_AND_MOVE(CompositeExampleImageFilter);
 
-//  Software Guide : BeginLatex
-//
-//  Next we have the standard declarations, used for object creation with
-//  the object factory:
-//
-//  Software Guide : EndLatex
+  //  Software Guide : EndCodeSnippet
 
-//  Software Guide : BeginCodeSnippet
-  typedef CompositeExampleImageFilter               Self;
-  typedef ImageToImageFilter<TImageType,TImageType> Superclass;
-  typedef SmartPointer<Self>                        Pointer;
-  typedef SmartPointer<const Self>                  ConstPointer;
-//  Software Guide : EndCodeSnippet
+  //  Software Guide : BeginLatex
+  //
+  //  Next we have the standard declarations, used for object creation with
+  //  the object factory:
+  //
+  //  Software Guide : EndLatex
+
+  //  Software Guide : BeginCodeSnippet
+  using Self = CompositeExampleImageFilter;
+  using Superclass = ImageToImageFilter<TImage, TImage>;
+  using Pointer = SmartPointer<Self>;
+  using ConstPointer = SmartPointer<const Self>;
+
+  //  Software Guide : EndCodeSnippet
 
   /** Method for creation through object factory */
   itkNewMacro(Self);
 
   /** Run-time type information */
-  itkTypeMacro(CompositeExampleImageFilter, ImageToImageFilter);
+  itkOverrideGetNameOfClassMacro(CompositeExampleImageFilter);
 
-  /** Display */
-  void PrintSelf( std::ostream& os, Indent indent ) const;
+  //  Software Guide : BeginLatex
+  //
+  //  Here we declare an alias (to save typing) for the image's pixel type,
+  //  which determines the type of the threshold value.  We then use the
+  //  convenience macros to define the Get and Set methods for this parameter.
+  //
+  //  Software Guide : EndLatex
 
-//  Software Guide : BeginLatex
-//
-//  Here we declare an alias (to save typing) for the image's pixel type,
-//  which determines the type of the threshold value.  We then use the
-//  convenience macros to define the Get and Set methods for this parameter.
-//
-//  Software Guide : EndLatex
+  //  Software Guide : BeginCodeSnippet
+  using ImageType = TImage;
+  using PixelType = typename ImageType::PixelType;
 
-//  Software Guide : BeginCodeSnippet
-
-  typedef typename TImageType::PixelType PixelType;
-
-  itkGetMacro( Threshold, PixelType);
-  itkSetMacro( Threshold, PixelType);
-
-//  Software Guide : EndCodeSnippet
+  itkGetMacro(Threshold, PixelType);
+  itkSetMacro(Threshold, PixelType);
+  //  Software Guide : EndCodeSnippet
 
 protected:
-
   CompositeExampleImageFilter();
 
-//  Software Guide : BeginLatex
-//
-//  Now we can declare the component filter types, templated over the
-//  enclosing image type:
-//
-//  Software Guide : EndLatex
+  //  Software Guide : BeginLatex
+  //
+  //  Now we can declare the component filter types, templated over the
+  //  enclosing image type:
+  //
+  //  Software Guide : EndLatex
 
-//  Software Guide : BeginCodeSnippet
+  //  Software Guide : BeginCodeSnippet
 protected:
+  using ThresholdType = ThresholdImageFilter<ImageType>;
+  using GradientType = GradientMagnitudeImageFilter<ImageType, ImageType>;
+  using RescalerType = RescaleIntensityImageFilter<ImageType, ImageType>;
+  //  Software Guide : EndCodeSnippet
 
-  typedef ThresholdImageFilter< TImageType >                     ThresholdType;
-  typedef GradientMagnitudeImageFilter< TImageType, TImageType > GradientType;
-  typedef RescaleIntensityImageFilter< TImageType, TImageType >  RescalerType;
-//  Software Guide : EndCodeSnippet
+  void
+  GenerateData() override;
 
-    void GenerateData();
+  /** Display */
+  void
+  PrintSelf(std::ostream & os, Indent indent) const override;
 
 private:
+  //  Software Guide : BeginLatex
+  //
+  //  The component filters are declared as data members, all using the smart
+  //  pointer types.
+  //
+  //  Software Guide : EndLatex
 
-  CompositeExampleImageFilter(Self&);   // intentionally not implemented
-  void operator=(const Self&);          // intentionally not implemented
-
-//  Software Guide : BeginLatex
-//
-//  The component filters are declared as data members, all using the smart
-//  pointer types.
-//
-//  Software Guide : EndLatex
-
-//  Software Guide : BeginCodeSnippet
-
-  typename GradientType::Pointer     m_GradientFilter;
-  typename ThresholdType::Pointer    m_ThresholdFilter;
-  typename RescalerType::Pointer     m_RescaleFilter;
+  //  Software Guide : BeginCodeSnippet
+  typename GradientType::Pointer  m_GradientFilter;
+  typename ThresholdType::Pointer m_ThresholdFilter;
+  typename RescalerType::Pointer  m_RescaleFilter;
 
   PixelType m_Threshold;
 };
 
-} /* namespace itk */
+} // end namespace itk
 //  Software Guide : EndCodeSnippet
 
- 
+
 //  Software Guide : BeginLatex
 //
 //  The constructor sets up the pipeline, which involves creating the
@@ -168,24 +155,24 @@ private:
 //
 //  Software Guide : EndLatex
 
-namespace itk 
+namespace itk
 {
 
 //  Software Guide : BeginCodeSnippet
-template <class TImageType>
-CompositeExampleImageFilter<TImageType>
-::CompositeExampleImageFilter()
+template <typename TImage>
+CompositeExampleImageFilter<TImage>::CompositeExampleImageFilter()
+  : m_GradientFilter(GradientType::New())
+  , m_ThresholdFilter(ThresholdType::New())
+  , m_RescaleFilter(RescalerType::New())
+  , m_Threshold(1)
 {
-  m_GradientFilter = GradientType::New();
-  m_ThresholdFilter = ThresholdType::New();
-  m_RescaleFilter = RescalerType::New();
 
-  m_ThresholdFilter->SetInput( m_GradientFilter->GetOutput() );
-  m_RescaleFilter->SetInput( m_ThresholdFilter->GetOutput() );
 
-  m_Threshold = 1;
+  m_ThresholdFilter->SetInput(m_GradientFilter->GetOutput());
 
-  m_RescaleFilter->SetOutputMinimum(NumericTraits<PixelType>::NonpositiveMin());
+  m_RescaleFilter->SetInput(m_ThresholdFilter->GetOutput());
+  m_RescaleFilter->SetOutputMinimum(
+    NumericTraits<PixelType>::NonpositiveMin());
   m_RescaleFilter->SetOutputMaximum(NumericTraits<PixelType>::max());
 }
 //  Software Guide : EndCodeSnippet
@@ -193,33 +180,49 @@ CompositeExampleImageFilter<TImageType>
 
 //  Software Guide : BeginLatex
 //
-//  The \code{GenerateData()} is where the composite magic happens.  First,
-//  we connect the first component filter to the inputs of the composite
-//  filter (the actual input, supplied by the upstream stage).  Then we
-//  graft the output of the last stage onto the output of the composite,
-//  which ensures the filter regions are updated.  We force the composite
-//  pipeline to be processed by calling \code{Update()} on the final stage,
-//  then graft the output back onto the output of the enclosing filter, so
-//  it has the result available to the downstream filter.
+//  The \code{GenerateData()} is where the composite magic happens.
+//
+//  First, connect the first component filter to the inputs of the composite
+//  filter (the actual input, supplied by the upstream stage). At a filter's
+//  \code{GenerateData()} stage, the input image's information and pixel
+//  buffer content have been updated by the pipeline. To prevent the
+//  mini-pipeline update from propagating upstream, the input image is
+//  disconnected from the pipeline by grafting its contents to a new
+//  \doxygen{Image} pointer.
+//
+//  This implies that the composite filter must
+//  implement pipeline methods that indicate the \doxygen{ImageRegion}'s it
+//  requires and generates, like \code{GenerateInputRequestedRegion()},
+//  \code{GenerateOutputRequestedRegion()}, \code{GenerateOutputInformation()}
+//  and \code{EnlargeOutputRequestedRegion()}, according to the behavior of
+//  its component filters.
+//
+//  Next, graft the output of the last stage onto the output of the composite,
+//  which ensures the requested region is updated and the last stage populates
+//  the output buffer allocated by the composite filter. We force the
+//  composite pipeline to be processed by calling \code{Update()} on the final
+//  stage. Then, graft the output back onto the output of the enclosing
+//  filter, so it has the result available to the downstream filter.
 //
 //  Software Guide : EndLatex
 
 //  Software Guide : BeginCodeSnippet
-template <class TImageType>
+template <typename TImage>
 void
-CompositeExampleImageFilter<TImageType>::
-GenerateData()
+CompositeExampleImageFilter<TImage>::GenerateData()
 {
-  m_GradientFilter->SetInput( this->GetInput() );
+  auto input = ImageType::New();
+  input->Graft(const_cast<ImageType *>(this->GetInput()));
+  m_GradientFilter->SetInput(input);
 
-  m_ThresholdFilter->ThresholdBelow( this->m_Threshold );
+  m_ThresholdFilter->ThresholdBelow(this->m_Threshold);
 
-  m_RescaleFilter->GraftOutput( this->GetOutput() );
+  m_RescaleFilter->GraftOutput(this->GetOutput());
   m_RescaleFilter->Update();
-  this->GraftOutput( m_RescaleFilter->GetOutput() );
+  this->GraftOutput(m_RescaleFilter->GetOutput());
 }
 //  Software Guide : EndCodeSnippet
- 
+
 //  Software Guide : BeginLatex
 //
 //  Finally we define the \code{PrintSelf} method, which (by convention)
@@ -230,19 +233,17 @@ GenerateData()
 //
 //  Software Guide : BeginCodeSnippet
 
-template <class TImageType>
+template <typename TImage>
 void
-CompositeExampleImageFilter<TImageType>::
-PrintSelf( std::ostream& os, Indent indent ) const
+CompositeExampleImageFilter<TImage>::PrintSelf(std::ostream & os,
+                                               Indent         indent) const
 {
-  Superclass::PrintSelf(os,indent);
+  Superclass::PrintSelf(os, indent);
 
-  os
-    << indent << "Threshold:" << this->m_Threshold
-    << std::endl;
+  os << indent << "Threshold: " << m_Threshold << std::endl;
 }
 
-} /* end namespace itk */
+} // end namespace itk
 
 //  Software Guide : EndCodeSnippet
 
@@ -250,9 +251,9 @@ PrintSelf( std::ostream& os, Indent indent ) const
 //
 //  It is important to note that in the above example, none of the internal
 //  details of the pipeline were exposed to users of the class.  The interface
-//  consisted of the Threshold parameter (which happened to change the value in
-//  the component filter) and the regular ImageToImageFilter interface.  This
-//  example pipeline is illustrated in
+//  consisted of the Threshold parameter (which happened to change the value
+//  in the component filter) and the regular ImageToImageFilter interface.
+//  This example pipeline is illustrated in
 //  Figure~\ref{fig:CompositeExamplePipeline}.
 //
 //  Software Guide : EndLatex
@@ -260,39 +261,40 @@ PrintSelf( std::ostream& os, Indent indent ) const
 #include "itkImageFileReader.h"
 #include "itkImageFileWriter.h"
 
-int main( int argc, char* argv[] )
+int
+main(int argc, char * argv[])
 {
-  if( argc < 3 ) 
-    { 
+  if (argc < 3)
+  {
     std::cerr << "Usage: " << std::endl;
     std::cerr << argv[0] << "  inputImageFile  outputImageFile" << std::endl;
     return EXIT_FAILURE;
-    }
+  }
 
-  typedef itk::Image<short, 2>                        ImageType;
-  typedef itk::ImageFileReader<ImageType>             ReaderType;
-  typedef itk::ImageFileWriter<ImageType>             WriterType;
+  using ImageType = itk::Image<short, 2>;
 
-  typedef itk::CompositeExampleImageFilter<ImageType> FilterType;
+  using ReaderType = itk::ImageFileReader<ImageType>;
+  auto reader = ReaderType::New();
+  reader->SetFileName(argv[1]);
 
-  ReaderType::Pointer reader = ReaderType::New();
-  WriterType::Pointer writer = WriterType::New();
-  FilterType::Pointer filter = FilterType::New();
+  using FilterType = itk::CompositeExampleImageFilter<ImageType>;
+  auto filter = FilterType::New();
+  filter->SetInput(reader->GetOutput());
+  filter->SetThreshold(20);
 
-  reader->SetFileName( argv[1] );
-  filter->SetInput( reader->GetOutput() );
-  filter->SetThreshold( 20 );
-  writer->SetInput( filter->GetOutput() );
-  writer->SetFileName( argv[2] );
+  using WriterType = itk::ImageFileWriter<ImageType>;
+  auto writer = WriterType::New();
+  writer->SetInput(filter->GetOutput());
+  writer->SetFileName(argv[2]);
 
   try
-    {
+  {
     writer->Update();
-    }
-  catch ( itk::ExceptionObject e )
-    {
+  }
+  catch (const itk::ExceptionObject & e)
+  {
     std::cerr << "Error: " << e << std::endl;
-    }
+  }
 
-  return 0;
+  return EXIT_SUCCESS;
 }

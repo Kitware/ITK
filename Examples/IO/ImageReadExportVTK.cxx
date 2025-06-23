@@ -1,26 +1,20 @@
 /*=========================================================================
-
-  Program:   Insight Segmentation & Registration Toolkit
-  Module:    ImageReadExportVTK.cxx
-  Language:  C++
-  Date:      $Date$
-  Version:   $Revision$
-
-  Copyright (c) Insight Software Consortium. All rights reserved.
-  See ITKCopyright.txt or http://www.itk.org/HTML/Copyright.htm for details.
-
-     This software is distributed WITHOUT ANY WARRANTY; without even 
-     the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR 
-     PURPOSE.  See the above copyright notices for more information.
-
-=========================================================================*/
-#if defined(_MSC_VER)
-#pragma warning ( disable : 4786 )
-#endif
-
-#ifdef __BORLANDC__
-#define ITK_LEAN_AND_MEAN
-#endif
+ *
+ *  Copyright NumFOCUS
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *         https://www.apache.org/licenses/LICENSE-2.0.txt
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *
+ *=========================================================================*/
 
 //  Software Guide : BeginLatex
 //
@@ -31,9 +25,9 @@
 //  the appropriate ImageIO class for performing the IO operations. Explicit
 //  selection of the ImageIO also allows the user to invoke specialized
 //  features of a particular class which may not be available from the
-//  general API provide by ImageIO.
+//  general API provided by ImageIO.
 //
-//  The following example illustrates explicit instantiating of an IO class
+//  The following example illustrates explicit instantiation of an IO class
 //  (in this case a VTK file format), setting its parameters and then
 //  connecting it to the \doxygen{ImageFileWriter}.
 //
@@ -43,7 +37,7 @@
 //  \index{itk::ImageFileWriter!header}
 //  \index{itk::VTKImageIO!header}
 //
-//  Software Guide : EndLatex 
+//  Software Guide : EndLatex
 
 // Software Guide : BeginCodeSnippet
 #include "itkImageFileReader.h"
@@ -55,15 +49,16 @@
 #include "itkImage.h"
 
 
-int main( int argc, char ** argv )
+int
+main(int argc, char ** argv)
 {
   // Verify the number of parameters in the command line
-  if( argc < 3 )
-    {
+  if (argc < 3)
+  {
     std::cerr << "Usage: " << std::endl;
     std::cerr << argv[0] << " inputImageFile  outputImageFile " << std::endl;
     return EXIT_FAILURE;
-    }
+  }
 
 
   //  Software Guide : BeginLatex
@@ -72,12 +67,12 @@ int main( int argc, char ** argv )
   //  dimension. Remember, if the file format represents pixels with a
   //  particular type, C-style casting will be performed to convert the data.
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  typedef unsigned short      PixelType;
-  const   unsigned int        Dimension = 2;
-  typedef itk::Image< PixelType, Dimension >    ImageType;
+  using PixelType = unsigned short;
+  constexpr unsigned int Dimension = 2;
+  using ImageType = itk::Image<PixelType, Dimension>;
   // Software Guide : EndCodeSnippet
 
 
@@ -92,12 +87,12 @@ int main( int argc, char ** argv )
   //  \index{itk::ImageFileWriter!Instantiation}
   //  \index{itk::VTKImageIO!Instantiation}
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  typedef itk::ImageFileReader< ImageType >  ReaderType;
-  typedef itk::ImageFileWriter< ImageType >  WriterType;
-  typedef itk::VTKImageIO                    ImageIOType;
+  using ReaderType = itk::ImageFileReader<ImageType>;
+  using WriterType = itk::ImageFileWriter<ImageType>;
+  using ImageIOType = itk::VTKImageIO;
   // Software Guide : EndCodeSnippet
 
 
@@ -113,35 +108,35 @@ int main( int argc, char ** argv )
   //  \index{itk::VTKImageIO!New()}
   //  \index{itk::VTKImageIO!SmartPointer}
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  ReaderType::Pointer reader = ReaderType::New();
-  WriterType::Pointer writer = WriterType::New();
-  ImageIOType::Pointer vtkIO = ImageIOType::New();
+  auto reader = ReaderType::New();
+  auto writer = WriterType::New();
+  auto vtkIO = ImageIOType::New();
   // Software Guide : EndCodeSnippet
 
 
   //
   // Here we recover the file names from the command line arguments
   //
-  const char * inputFilename  = argv[1];
+  const char * inputFilename = argv[1];
   const char * outputFilename = argv[2];
 
 
   //  Software Guide : BeginLatex
   //
   //  The name of the file to be read or written is passed with the
-  //  SetFileName() method. 
+  //  SetFileName() method.
   //
   //  \index{itk::ImageFileReader!SetFileName()}
   //  \index{itk::ImageFileWriter!SetFileName()}
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  reader->SetFileName( inputFilename  );
-  writer->SetFileName( outputFilename );
+  reader->SetFileName(inputFilename);
+  writer->SetFileName(outputFilename);
   // Software Guide : EndCodeSnippet
 
 
@@ -151,10 +146,10 @@ int main( int argc, char ** argv )
   //  pipeline. For example, we can create a short pipeline by passing the
   //  output of the reader directly to the input of the writer.
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  writer->SetInput( reader->GetOutput() );
+  writer->SetInput(reader->GetOutput());
   // Software Guide : EndCodeSnippet
 
 
@@ -164,10 +159,10 @@ int main( int argc, char ** argv )
   //  invoke methods specific to a particular IO class. For example, the
   //  following line specifies to the writer to use ASCII format when writing
   //  the pixel data.
-  // 
+  //
   //  \index{itk::VTKImageIO!SetFileTypeToASCII()}
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
   vtkIO->SetFileTypeToASCII();
@@ -182,13 +177,13 @@ int main( int argc, char ** argv )
   //  not attempt to look for other ImageIO objects capable of
   //  performing the writing tasks. It will simply invoke the one provided by
   //  the user.
-  // 
+  //
   //  \index{itk::ImageFileWriter!SetImageIO()}
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  writer->SetImageIO( vtkIO );
+  writer->SetImageIO(vtkIO);
   // Software Guide : EndCodeSnippet
 
 
@@ -197,22 +192,22 @@ int main( int argc, char ** argv )
   //  Finally we invoke Update() on the ImageFileWriter and
   //  place this call inside a try/catch block in case any errors occur during
   //  the writing process.
-  // 
+  //
   //  \index{itk::ImageFileWriter!SetImageIO()}
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  try 
-    { 
-    writer->Update(); 
-    } 
-  catch( itk::ExceptionObject & err ) 
-    { 
-    std::cerr << "ExceptionObject caught !" << std::endl; 
-    std::cerr << err << std::endl; 
+  try
+  {
+    writer->Update();
+  }
+  catch (const itk::ExceptionObject & err)
+  {
+    std::cerr << "ExceptionObject caught !" << std::endl;
+    std::cerr << err << std::endl;
     return EXIT_FAILURE;
-    } 
+  }
   // Software Guide : EndCodeSnippet
 
 
@@ -224,13 +219,13 @@ int main( int argc, char ** argv )
   //  which this is done is when reading raw image files with the
   //  \doxygen{RawImageIO} object. The drawback of this approach is that the
   //  parameters of the image have to be explicitly written in the code.  The
-  //  direct use of raw file is \textbf{strongly discouraged} in medical
+  //  direct use of raw files is \textbf{strongly discouraged} in medical
   //  imaging.  It is always better to create a header for a raw file by
   //  using any of the file formats that combine a text header file and a raw
   //  binary file, like \doxygen{MetaImageIO}, \doxygen{GiplImageIO} and
   //  \doxygen{VTKImageIO}.
-  // 
-  //  Software Guide : EndLatex 
+  //
+  //  Software Guide : EndLatex
 
   return EXIT_SUCCESS;
 }

@@ -1,33 +1,28 @@
 /*=========================================================================
-
-  Program:   Insight Segmentation & Registration Toolkit
-  Module:    FFTDirectInverse2.cxx
-  Language:  C++
-  Date:      $Date$
-  Version:   $Revision$
-
-  Copyright (c) Insight Software Consortium. All rights reserved.
-  See ITKCopyright.txt or http://www.itk.org/HTML/Copyright.htm for details.
-
-     This software is distributed WITHOUT ANY WARRANTY; without even
-     the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-     PURPOSE.  See the above copyright notices for more information.
-
-=========================================================================*/
-#if defined(_MSC_VER)
-#pragma warning ( disable : 4786 )
-#endif
-
-#ifdef __BORLANDC__
-#define ITK_LEAN_AND_MEAN
-#endif
+ *
+ *  Copyright NumFOCUS
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *         https://www.apache.org/licenses/LICENSE-2.0.txt
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *
+ *=========================================================================*/
 
 #include "itkConfigure.h"
 
 //
-// This example is based on the on that was contributed by Stephan in the users list
+// This example is based on the on that was contributed by Stephan in the
+// users list
 //
-//     http://public.kitware.com/pipermail/insight-users/2005-June/013482.html
+//     https://public.kitware.com/pipermail/insight-users/2005-June/013482.html
 //
 //
 
@@ -43,97 +38,98 @@
 #include "itkImageFileWriter.h"
 #include "itkResampleImageFilter.h"
 #include "itkRescaleIntensityImageFilter.h"
-#include "itkFFTWRealToComplexConjugateImageFilter.h"
-#include "itkFFTWComplexConjugateToRealImageFilter.h"
+#include "itkFFTWForwardFFTImageFilter.h"
+#include "itkFFTWInverseFFTImageFilter.h"
 #include "itkFlipImageFilter.h"
 
-#if !defined(USE_FFTWF)
-//#error "This example only works when single precision FFTW is used
-//Changing WorkPixeltype to double and changing this conditional to USE_FFTWD
-//will also work.
+#if !defined(ITK_USE_FFTWF)
+// #error "This example only works when single precision FFTW is used
+//  Changing WorkPixeltype to double and changing this conditional to
+//  ITK_USE_FFTWD will also work.
 #endif
 
-int main( int argc, char * argv[] )
+int
+main(int argc, char * argv[])
 {
-  if( argc != 3 )
-    {
+  if (argc != 3)
+  {
     std::cerr << "Usage: " << argv[0] << " input output" << std::endl;
     return EXIT_FAILURE;
-    }
+  }
 
-// Software Guide : BeginLatex
-//
-// First we set up the types of the input and output images.
-//
-// Software Guide : EndLatex
+  // Software Guide : BeginLatex
+  //
+  // First we set up the types of the input and output images.
+  //
+  // Software Guide : EndLatex
 
-// Software Guide : BeginCodeSnippet
-  const unsigned int      Dimension = 2;
-  //  typedef unsigned char   OutputPixelType;
-  typedef unsigned short  OutputPixelType;
-  typedef float           WorkPixelType;
+  // Software Guide : BeginCodeSnippet
+  constexpr unsigned int Dimension = 2;
+  //  using OutputPixelType = unsigned char;
+  using OutputPixelType = unsigned short;
+  using WorkPixelType = float;
 
-  typedef itk::Image< WorkPixelType,  Dimension > InputImageType;
-  typedef itk::Image< WorkPixelType,  Dimension > WorkImageType;
-  typedef itk::Image< OutputPixelType,Dimension > OutputImageType;
-// Software Guide : EndCodeSnippet
+  using InputImageType = itk::Image<WorkPixelType, Dimension>;
+  using WorkImageType = itk::Image<WorkPixelType, Dimension>;
+  using OutputImageType = itk::Image<OutputPixelType, Dimension>;
+  // Software Guide : EndCodeSnippet
 
-// File handling
-  typedef itk::ImageFileReader< InputImageType  > ReaderType;
-  typedef itk::ImageFileWriter< OutputImageType > WriterType;
+  // File handling
+  using ReaderType = itk::ImageFileReader<InputImageType>;
+  using WriterType = itk::ImageFileWriter<OutputImageType>;
 
-  ReaderType::Pointer inputreader = ReaderType::New();
-  WriterType::Pointer writer = WriterType::New();
+  auto inputreader = ReaderType::New();
+  auto writer = WriterType::New();
 
-  inputreader->SetFileName( argv[1] );
-  writer->SetFileName( argv[2] );
+  inputreader->SetFileName(argv[1]);
+  writer->SetFileName(argv[2]);
 
-// Read the image and get its size
+  // Read the image and get its size
   inputreader->Update();
 
-// Forward FFT filter
-  typedef itk::FFTWRealToComplexConjugateImageFilter <
-                                              WorkPixelType,
-                                              Dimension
-                                                      > FFTFilterType;
+  // Forward FFT filter
+  using FFTFilterType = itk::FFTWForwardFFTImageFilter<InputImageType>;
 
-  FFTFilterType::Pointer fftinput = FFTFilterType::New();
-  fftinput->SetInput( inputreader->GetOutput() );
+  auto fftinput = FFTFilterType::New();
+  fftinput->SetInput(inputreader->GetOutput());
   fftinput->Update();
 
-// This is the output type from the FFT filters
-  typedef FFTFilterType::OutputImageType ComplexImageType;
+  // This is the output type from the FFT filters
+  using ComplexImageType = FFTFilterType::OutputImageType;
 
-// Do the inverse transform = forward transform + flip all axes
-  typedef itk::FFTWComplexConjugateToRealImageFilter <
-                                              WorkPixelType,
-                                              Dimension > invFFTFilterType;
+  // Do the inverse transform = forward transform + flip all axes
+  using invFFTFilterType = itk::FFTWInverseFFTImageFilter<ComplexImageType>;
 
-  invFFTFilterType::Pointer fftoutput = invFFTFilterType::New();
-  fftoutput->SetInput(fftinput->GetOutput()); // try to recover the input image
+  auto fftoutput = invFFTFilterType::New();
+  fftoutput->SetInput(
+    fftinput->GetOutput()); // try to recover the input image
   fftoutput->Update();
 
   // Rescale the output to suit the output image type
-  typedef itk::RescaleIntensityImageFilter<
-                                      WorkImageType,
-                                      OutputImageType > RescaleFilterType;
+  using RescaleFilterType =
+    itk::RescaleIntensityImageFilter<WorkImageType, OutputImageType>;
 
-  RescaleFilterType::Pointer intensityrescaler = RescaleFilterType::New();
+  auto intensityrescaler = RescaleFilterType::New();
 
-  std::cout << fftoutput->GetOutput()->GetLargestPossibleRegion().GetSize() << std::endl;
-  intensityrescaler->SetInput( fftoutput->GetOutput() );
+  std::cout << fftoutput->GetOutput()->GetLargestPossibleRegion().GetSize()
+            << std::endl;
+  intensityrescaler->SetInput(fftoutput->GetOutput());
 
-  intensityrescaler->SetOutputMinimum(  0  );
-  intensityrescaler->SetOutputMaximum( 65535 );
+  intensityrescaler->SetOutputMinimum(0);
+  intensityrescaler->SetOutputMaximum(65535);
 
   // Write the output
   writer->SetInput(intensityrescaler->GetOutput());
   writer->Update();
 
-  //DEBUG: std::cout << "inputreader "<<inputreader->GetOutput()->GetLargestPossibleRegion().GetSize() << std::endl;
-  //DEBUG: std::cout << "fftinput " <<fftinput->GetOutput()->GetLargestPossibleRegion().GetSize() << std::endl;
-  //DEBUG: std::cout << "fftoutput " <<fftoutput->GetOutput()->GetLargestPossibleRegion().GetSize() << std::endl;
-  //DEBUG: std::cout << "intensityrescaller " <<intensityrescaler->GetOutput()->GetLargestPossibleRegion().GetSize() << std::endl;
+  // DEBUG: std::cout << "inputreader
+  // "<<inputreader->GetOutput()->GetLargestPossibleRegion().GetSize() <<
+  // std::endl; DEBUG: std::cout << "fftinput "
+  // <<fftinput->GetOutput()->GetLargestPossibleRegion().GetSize() <<
+  // std::endl; DEBUG: std::cout << "fftoutput "
+  // <<fftoutput->GetOutput()->GetLargestPossibleRegion().GetSize() <<
+  // std::endl; DEBUG: std::cout << "intensityrescaler "
+  // <<intensityrescaler->GetOutput()->GetLargestPossibleRegion().GetSize() <<
+  // std::endl;
   return EXIT_SUCCESS;
-
 }

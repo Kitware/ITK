@@ -1,137 +1,94 @@
-OPTION(ITK_USE_KWSTYLE "Enable the use of KWStyle for checking coding style." OFF)
-IF(ITK_USE_KWSTYLE)
-
-# Set the required KWStyle version
-SET(KWSTYLE_REQ_MAJOR 1)
-SET(KWSTYLE_REQ_MINOR 0)
-SET(KWSTYLE_REQ_PATCH 1)
-
-OPTION(KWSTYLE_USE_VIM_FORMAT "Set KWStyle to generate errors with a VIM-compatible format." OFF)
-OPTION(KWSTYLE_USE_MSVC_FORMAT "Set KWStyle to generate errors with a VisualStudio-compatible format." OFF)
-
-FIND_PROGRAM(KWSTYLE_EXECUTABLE
-NAMES KWStyle 
-PATHS
-/usr/local/bin
-)
-
-IF(KWSTYLE_EXECUTABLE)
-  
-  EXECUTE_PROCESS(
-  COMMAND ${KWSTYLE_EXECUTABLE} -version
-  OUTPUT_VARIABLE KWSTYLE_VERSION_TEXT
-  ) 
-
-string(STRIP ${KWSTYLE_VERSION_TEXT} KWSTYLE_VERSION_TEXT)
-
-IF(KWSTYLE_VERSION_TEXT STREQUAL "Version: Not defined")
-  MESSAGE("This project requires a newer version of KWStyle. Please upgrade the KWStyle executable.")
-ELSE(${KWSTYLE_VERSION_TEXT} STREQUAL "Version: Not defined")
-
-  string(LENGTH ${KWSTYLE_VERSION_TEXT} KWSTYLE_VERSION_LENGTH)
-  math(EXPR KWSTYLE_VERSION_FINAL_LENGTH "${KWSTYLE_VERSION_LENGTH}-9")
-  string(SUBSTRING ${KWSTYLE_VERSION_TEXT} 9 ${KWSTYLE_VERSION_FINAL_LENGTH} KWSTYLE_VERSION)
-
-  # now parse the parts of the user given version string into variables
-  STRING(REGEX REPLACE "^([0-9]+)\\.[0-9]+\\.[0-9]+" "\\1" KWSTYLE_MAJOR_VERSION "${KWSTYLE_VERSION}")
-  STRING(REGEX REPLACE "^[0-9]+\\.([0-9])+\\.[0-9]+" "\\1" KWSTYLE_MINOR_VERSION "${KWSTYLE_VERSION}")
-  STRING(REGEX REPLACE "^[0-9]+\\.[0-9]+\\.([0-9]+)" "\\1" KWSTYLE_PATCH_VERSION "${KWSTYLE_VERSION}")
-
-  MATH(EXPR KWSTYLE_REQ_VERSION "${KWSTYLE_REQ_MAJOR}*10000 + ${KWSTYLE_REQ_MINOR}*100 + ${KWSTYLE_REQ_PATCH}")
-  MATH(EXPR KWSTYLE_LONG_VERSION "${KWSTYLE_MAJOR_VERSION}*10000 + ${KWSTYLE_MINOR_VERSION}*100 + ${KWSTYLE_PATCH_VERSION}")
-  
-  # Set the minimum require version for batchmake
-  IF(KWSTYLE_LONG_VERSION LESS KWSTYLE_REQ_VERSION)
-    MESSAGE(FATAL_ERROR "This project requires a newer version of KWStyle. Please upgrade the KWStyle executable.")
-  ELSE(KWSTYLE_LONG_VERSION LESS KWSTYLE_REQ_VERSION)
-    SET(KWSTYLE_FOUND 1)
-  ENDIF(KWSTYLE_LONG_VERSION LESS KWSTYLE_REQ_VERSION)
-ENDIF(KWSTYLE_VERSION_TEXT STREQUAL "Version: Not defined")
-
-IF(KWSTYLE_FOUND)
-#
-#  Define file names
-#
-SET(KWSTYLE_CONFIGURATION_FILE 
-  ${PROJECT_BINARY_DIR}/Utilities/KWStyle/ITK.kws.xml)
-
-SET(KWSTYLE_ITK_FILES_LIST
-  ${PROJECT_BINARY_DIR}/Utilities/KWStyle/ITKFiles.txt)
-
-SET(KWSTYLE_ITK_REVIEW_FILES_LIST
-  ${PROJECT_BINARY_DIR}/Utilities/KWStyle/ITKReviewFiles.txt)
-
-SET(KWSTYLE_ITK_OVERWRITE_FILE
-  ${PROJECT_SOURCE_DIR}/Utilities/KWStyle/ITKOverwrite.txt )
-
-#
-# Configure the files
-#
-CONFIGURE_FILE(
-  ${PROJECT_SOURCE_DIR}/Utilities/KWStyle/ITKFiles.txt.in
-  ${KWSTYLE_ITK_FILES_LIST})
-
-CONFIGURE_FILE(
-  ${PROJECT_SOURCE_DIR}/Utilities/KWStyle/ITKReviewFiles.txt.in
-  ${KWSTYLE_ITK_REVIEW_FILES_LIST})
-
-CONFIGURE_FILE(
-  ${PROJECT_SOURCE_DIR}/Utilities/KWStyle/ITK.kws.xml.in
-  ${KWSTYLE_CONFIGURATION_FILE})
-
-
-#
-#  Define formatting for error messages
-#
-SET(KWSTYLE_EDITOR_FORMAT " ")
-SET(KWSTYLE_EDITOR_FORMAT "")
-
-IF(${CMAKE_CXX_COMPILER} MATCHES "cl.exe$")
-  SET(KWSTYLE_USE_MSVC_FORMAT 1)
-ENDIF(${CMAKE_CXX_COMPILER} MATCHES "cl.exe$")
-
-IF(${CMAKE_C_COMPILER} MATCHES "g[cx][cx]$")
-  SET(KWSTYLE_USE_VIM_FORMAT 1)
-ENDIF(${CMAKE_C_COMPILER} MATCHES "g[cx][cx]$")
-
-IF(KWSTYLE_USE_VIM_FORMAT)
-  SET(KWSTYLE_EDITOR_FORMAT -vim)
-ENDIF(KWSTYLE_USE_VIM_FORMAT)
-
-IF(KWSTYLE_USE_MSVC_FORMAT)
-  SET(KWSTYLE_EDITOR_FORMAT -msvc)
-ENDIF(KWSTYLE_USE_MSVC_FORMAT)
-
-SET(KWSTYLE_ARGUMENTS_REVIEW
-  -xml ${KWSTYLE_CONFIGURATION_FILE} -v -D ${KWSTYLE_ITK_REVIEW_FILES_LIST}
-  -o ${KWSTYLE_ITK_OVERWRITE_FILE} ${KWSTYLE_EDITOR_FORMAT}
+if(ITK_USE_KWSTYLE)
+  # Define and configure configuration files
+  set(
+    kwstyle_itk_configuration_file
+    ${ITK_SOURCE_DIR}/Utilities/KWStyle/ITK.kws.xml
+  )
+  set(
+    kwstyle_itk_examples_files_list_file
+    ${ITK_BINARY_DIR}/Utilities/KWStyle/ITKExamplesFiles.txt
+  )
+  configure_file(
+    # KWStyle requires that the files list be absolute paths
+    ${ITK_SOURCE_DIR}/Utilities/KWStyle/ITKExamplesFiles.txt.in
+    ${kwstyle_itk_examples_files_list_file}
+  )
+  set(
+    kwstyle_itk_overwrite_file
+    ${ITK_SOURCE_DIR}/Utilities/KWStyle/ITKOverwrite.txt
   )
 
-SET(KWSTYLE_ARGUMENTS_CODE
-  -xml ${KWSTYLE_CONFIGURATION_FILE} -v -D ${KWSTYLE_ITK_FILES_LIST}
-  -o ${KWSTYLE_ITK_OVERWRITE_FILE} ${KWSTYLE_EDITOR_FORMAT}
+  # Define formatting for error messages for output of build target
+  option(
+    KWSTYLE_USE_VIM_FORMAT
+    "Set KWStyle to generate errors with a VIM-compatible format."
+    OFF
+  )
+  option(
+    KWSTYLE_USE_GCC_FORMAT
+    "Set KWStyle to generate errors with a GCC-compatible format."
+    OFF
+  )
+  option(
+    KWSTYLE_USE_MSVC_FORMAT
+    "Set KWStyle to generate errors with a VisualStudio-compatible format."
+    ${MSVC_IDE} # default to TRUE only with a Visual Studio IDE
   )
 
-ADD_CUSTOM_COMMAND(
-  OUTPUT ${ITK_BINARY_DIR}/KWStyleReviewReport.txt
-  COMMAND ${KWSTYLE_EXECUTABLE}
-  ARGS    ${KWSTYLE_ARGUMENTS_REVIEW}
-  COMMENT "Coding Style Checker"
+  mark_as_advanced(KWSTYLE_USE_VIM_FORMAT)
+  mark_as_advanced(KWSTYLE_USE_GCC_FORMAT)
+  mark_as_advanced(KWSTYLE_USE_MSVC_FORMAT)
+
+  set(kwstyle_editor_format "")
+  if(KWSTYLE_USE_VIM_FORMAT)
+    list(APPEND kwstyle_editor_format -vim)
+  endif()
+  if(KWSTYLE_USE_GCC_FORMAT)
+    list(APPEND kwstyle_editor_format -gcc)
+  endif()
+  if(KWSTYLE_USE_MSVC_FORMAT)
+    list(APPEND kwstyle_editor_format -msvc)
+  endif()
+
+  list(LENGTH kwstyle_editor_format kwstyle_editor_format_length)
+  if(kwstyle_editor_format_length GREATER 1)
+    message(
+      FATAL_ERROR
+      "At most, only one of KWSTYLE_USE_*_FORMAT can be set to TRUE."
+    )
+  endif()
+
+  # Add build target and CTest test
+  set(
+    kwstyle_common_arguments
+    -xml
+    ${kwstyle_itk_configuration_file}
+    -v
+    -o
+    ${kwstyle_itk_overwrite_file}
   )
-
-ADD_CUSTOM_COMMAND(
-  OUTPUT  ${ITK_BINARY_DIR}/KWStyleCodeReport.txt
-  COMMAND ${KWSTYLE_EXECUTABLE}
-  ARGS    ${KWSTYLE_ARGUMENTS_CODE}
-  COMMENT "Coding Style Checker"
+  add_custom_target(
+    StyleCheckExamples
+    COMMAND
+      ${KWSTYLE_EXECUTABLE} ${kwstyle_common_arguments} -D
+      ${kwstyle_itk_examples_files_list_file} ${kwstyle_editor_format}
+    COMMENT "Examples Style Checker"
+    WORKING_DIRECTORY
+      ${ITK_SOURCE_DIR} # the paths in kwstyle_itk_configuration_file are relative
   )
-
-ADD_CUSTOM_TARGET(StyleCheckReview DEPENDS ${ITK_BINARY_DIR}/KWStyleReviewReport.txt)
-ADD_CUSTOM_TARGET(StyleCheckCode DEPENDS ${ITK_BINARY_DIR}/KWStyleCodeReport.txt)
-
-ADD_TEST(KWStyleReviewTest ${KWSTYLE_EXECUTABLE} ${KWSTYLE_ARGUMENTS_REVIEW})
-ADD_TEST(KWStyleCodeTest   ${KWSTYLE_EXECUTABLE} ${KWSTYLE_ARGUMENTS_CODE})
-
-ENDIF(KWSTYLE_FOUND)
-ENDIF(KWSTYLE_EXECUTABLE)
-ENDIF(ITK_USE_KWSTYLE)
+  if(BUILD_TESTING)
+    set(itk-module KWStyle)
+    itk_add_test(
+          NAME
+          KWStyleExamplesTest
+          COMMAND
+          ${KWSTYLE_EXECUTABLE}
+          ${kwstyle_common_arguments}
+          -D
+          ${kwstyle_itk_examples_files_list_file}
+          -gcc
+          WORKING_DIRECTORY
+          ${ITK_SOURCE_DIR}
+    )
+  endif()
+endif()

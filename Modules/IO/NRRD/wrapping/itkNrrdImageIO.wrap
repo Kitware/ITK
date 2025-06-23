@@ -1,0 +1,2 @@
+itk_wrap_simple_class("itk::NrrdImageIO" POINTER)
+itk_wrap_simple_class("itk::NrrdImageIOFactory" POINTER)

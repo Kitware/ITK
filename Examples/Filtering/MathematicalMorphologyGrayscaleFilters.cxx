@@ -1,32 +1,26 @@
 /*=========================================================================
-
-  Program:   Insight Segmentation & Registration Toolkit
-  Module:    MathematicalMorphologyGrayscaleFilters.cxx
-  Language:  C++
-  Date:      $Date$
-  Version:   $Revision$
-
-  Copyright (c) Insight Software Consortium. All rights reserved.
-  See ITKCopyright.txt or http://www.itk.org/HTML/Copyright.htm for details.
-
-     This software is distributed WITHOUT ANY WARRANTY; without even 
-     the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR 
-     PURPOSE.  See the above copyright notices for more information.
-
-=========================================================================*/
-#if defined(_MSC_VER)
-#pragma warning ( disable : 4786 )
-#endif
-
-#ifdef __BORLANDC__
-#define ITK_LEAN_AND_MEAN
-#endif
+ *
+ *  Copyright NumFOCUS
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *         https://www.apache.org/licenses/LICENSE-2.0.txt
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *
+ *=========================================================================*/
 
 //  Software Guide : BeginCommandLineArgs
-//    INPUTS: {BrainProtonDensitySlice.png}
+//    INPUTS:  {BrainProtonDensitySlice.png}
 //    OUTPUTS: {MathematicalMorphologyGrayscaleErosionOutput.png}
 //    OUTPUTS: {MathematicalMorphologyGrayscaleDilationOutput.png}
-//    150 180
+//    ARGUMENTS:    150 180
 //  Software Guide : EndCommandLineArgs
 
 //  Software Guide : BeginLatex
@@ -42,7 +36,7 @@
 //  \index{itk::GrayscaleDilateImageFilter!header}
 //  \index{itk::GrayscaleErodeImageFilter!header}
 //
-//  Software Guide : EndLatex 
+//  Software Guide : EndLatex
 
 #include "itkImage.h"
 #include "itkImageFileReader.h"
@@ -52,19 +46,21 @@
 // Software Guide : BeginCodeSnippet
 #include "itkGrayscaleErodeImageFilter.h"
 #include "itkGrayscaleDilateImageFilter.h"
-#include "itkBinaryBallStructuringElement.h" 
+#include "itkBinaryBallStructuringElement.h"
 // Software Guide : EndCodeSnippet
 
 
-int main( int argc, char * argv[] )
+int
+main(int argc, char * argv[])
 {
-  if( argc < 4 )
-    {
+  if (argc < 4)
+  {
     std::cerr << "Usage: " << std::endl;
     std::cerr << argv[0] << "  inputImageFile  ";
-    std::cerr << " outputImageFileErosion  outputImageFileDilation" << std::endl;
+    std::cerr << " outputImageFileErosion  outputImageFileDilation"
+              << std::endl;
     return EXIT_FAILURE;
-    }
+  }
 
 
   //  Software Guide : BeginLatex
@@ -72,20 +68,20 @@ int main( int argc, char * argv[] )
   //  The following code defines the input and output pixel types and their
   //  associated image types.
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  const unsigned int Dimension = 2;
-  
-  typedef unsigned char   InputPixelType;
-  typedef unsigned char   OutputPixelType;
+  constexpr unsigned int Dimension = 2;
 
-  typedef itk::Image< InputPixelType,  Dimension >   InputImageType;
-  typedef itk::Image< OutputPixelType, Dimension >   OutputImageType;
+  using InputPixelType = unsigned char;
+  using OutputPixelType = unsigned char;
+
+  using InputImageType = itk::Image<InputPixelType, Dimension>;
+  using OutputImageType = itk::Image<OutputPixelType, Dimension>;
   // Software Guide : EndCodeSnippet
 
-  typedef itk::ImageFileReader< InputImageType  >  ReaderType;
-  typedef itk::ImageFileWriter< OutputImageType >  WriterType;
+  using ReaderType = itk::ImageFileReader<InputImageType>;
+  using WriterType = itk::ImageFileWriter<OutputImageType>;
 
 
   //  Software Guide : BeginLatex
@@ -93,7 +89,7 @@ int main( int argc, char * argv[] )
   //  Mathematical morphology operations are based on the application of an
   //  operator over a neighborhood of each input pixel. The combination of
   //  the rule and the neighborhood is known as \emph{structuring
-  //  element}. Although some rules have become the de facto standard in image
+  //  element}. Although some rules have become the defacto standard in image
   //  processing there is a good deal of freedom as to what kind of
   //  algorithmic rule should be applied on the neighborhood. The
   //  implementation in ITK follows the typical rule of minimum for
@@ -104,39 +100,38 @@ int main( int argc, char * argv[] )
   //  element is the \doxygen{BinaryBallStructuringElement} class. This class
   //  is instantiated using the pixel type and dimension of the input image.
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  typedef itk::BinaryBallStructuringElement< 
-                      InputPixelType,
-                      Dimension  >             StructuringElementType;
+  using StructuringElementType =
+    itk::BinaryBallStructuringElement<InputPixelType, Dimension>;
   // Software Guide : EndCodeSnippet
 
   //  Software Guide : BeginLatex
   //
-  //  The structuring element type is then used along with the input and output
-  //  image types for instantiating the type of the filters.
+  //  The structuring element type is then used along with the input and
+  //  output image types for instantiating the type of the filters.
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
 
   // Software Guide : BeginCodeSnippet
-  typedef itk::GrayscaleErodeImageFilter<
-                            InputImageType, 
-                            OutputImageType,
-                            StructuringElementType >  ErodeFilterType;
+  using ErodeFilterType =
+    itk::GrayscaleErodeImageFilter<InputImageType,
+                                   OutputImageType,
+                                   StructuringElementType>;
 
-  typedef itk::GrayscaleDilateImageFilter<
-                            InputImageType, 
-                            OutputImageType, 
-                            StructuringElementType >  DilateFilterType;
+  using DilateFilterType =
+    itk::GrayscaleDilateImageFilter<InputImageType,
+                                    OutputImageType,
+                                    StructuringElementType>;
   // Software Guide : EndCodeSnippet
 
 
   // Creation of Reader and Writer filters
-  ReaderType::Pointer reader = ReaderType::New();
-  WriterType::Pointer writerDilation = WriterType::New();
-  WriterType::Pointer writerErosion  = WriterType::New();
+  auto reader = ReaderType::New();
+  auto writerDilation = WriterType::New();
+  auto writerErosion = WriterType::New();
 
 
   //  Software Guide : BeginLatex
@@ -149,11 +144,11 @@ int main( int argc, char * argv[] )
   //  \index{itk::GrayscaleDilateImageFilter!Pointer}
   //  \index{itk::GrayscaleErodeImageFilter!Pointer}
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  ErodeFilterType::Pointer  grayscaleErode  = ErodeFilterType::New();
-  DilateFilterType::Pointer grayscaleDilate = DilateFilterType::New();
+  auto grayscaleErode = ErodeFilterType::New();
+  auto grayscaleDilate = DilateFilterType::New();
   // Software Guide : EndCodeSnippet
 
   //  Software Guide : BeginLatex
@@ -161,11 +156,11 @@ int main( int argc, char * argv[] )
   //  The structuring element is not a reference counted class. Thus it is
   //  created as a C++ stack object instead of using \code{New()} and
   //  SmartPointers. The radius of the neighborhood associated with the
-  //  structuring element is defined with the \code{SetRadius()} method and the
-  //  \code{CreateStructuringElement()} method is invoked in order to initialize the
-  //  operator.  The resulting structuring element is passed to the
-  //  mathematical morphology filter through the \code{SetKernel()} method, as
-  //  illustrated below.
+  //  structuring element is defined with the \code{SetRadius()} method and
+  //  the \code{CreateStructuringElement()} method is invoked in order to
+  //  initialize the operator.  The resulting structuring element is passed to
+  //  the mathematical morphology filter through the \code{SetKernel()}
+  //  method, as illustrated below.
   //
   //  \index{itk::BinaryBallStructuringElement!SetRadius()}
   //  \index{itk::BinaryBallStructuringElement!CreateStructuringElement()}
@@ -177,68 +172,68 @@ int main( int argc, char * argv[] )
   //  \index{SetRadius()!itk::BinaryBallStructuringElement}
   //  \index{CreateStructuringElement()!itk::BinaryBallStructuringElement}
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  StructuringElementType  structuringElement;
+  StructuringElementType structuringElement;
 
-  structuringElement.SetRadius( 1 );  // 3x3 structuring element
+  structuringElement.SetRadius(1); // 3x3 structuring element
 
   structuringElement.CreateStructuringElement();
 
-  grayscaleErode->SetKernel(  structuringElement );
-  grayscaleDilate->SetKernel( structuringElement );
+  grayscaleErode->SetKernel(structuringElement);
+  grayscaleDilate->SetKernel(structuringElement);
   // Software Guide : EndCodeSnippet
 
 
-  reader->SetFileName( argv[1] );
- 
-  writerErosion->SetFileName(  argv[2] );
-  writerDilation->SetFileName( argv[3] );
-  
+  reader->SetFileName(argv[1]);
+
+  writerErosion->SetFileName(argv[2]);
+  writerDilation->SetFileName(argv[3]);
+
 
   //  Software Guide : BeginLatex
   //
-  //  A grayscale image is provided as input to the filters. This image might be,
-  //  for example, the output of a reader.
+  //  A grayscale image is provided as input to the filters. This image might
+  //  be, for example, the output of a reader.
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
 
   // Software Guide : BeginCodeSnippet
-  grayscaleErode->SetInput(  reader->GetOutput() );
-  grayscaleDilate->SetInput( reader->GetOutput() );
+  grayscaleErode->SetInput(reader->GetOutput());
+  grayscaleDilate->SetInput(reader->GetOutput());
   // Software Guide : EndCodeSnippet
 
 
   //  Software Guide : BeginLatex
   //
   //  The filter is executed by invoking its \code{Update()} method, or by
-  //  updating any downstream filter, like, for example, an image writer.
+  //  updating any downstream filter, such as an image writer.
   //
   //  \index{itk::GrayscaleDilateImageFilter!Update()}
   //  \index{itk::GrayscaleErodeImageFilter!Update()}
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
 
   // Software Guide : BeginCodeSnippet
-  writerDilation->SetInput( grayscaleDilate->GetOutput() );
+  writerDilation->SetInput(grayscaleDilate->GetOutput());
   writerDilation->Update();
   // Software Guide : EndCodeSnippet
 
-  writerErosion->SetInput( grayscaleErode->GetOutput() );
+  writerErosion->SetInput(grayscaleErode->GetOutput());
   writerErosion->Update();
 
   //  Software Guide : BeginLatex
-  // 
+  //
   // \begin{figure}
   // \center
-  // \includegraphics[width=0.32\textwidth]{BrainProtonDensitySlice.eps}
-  // \includegraphics[width=0.32\textwidth]{MathematicalMorphologyGrayscaleErosionOutput.eps}
-  // \includegraphics[width=0.32\textwidth]{MathematicalMorphologyGrayscaleDilationOutput.eps}
-  // \itkcaption[Effect of erosion and dilation in a grayscale image.]{Effect of
-  // erosion and dilation in a grayscale image.}
+  // \includegraphics[width=0.32\textwidth]{BrainProtonDensitySlice}
+  // \includegraphics[width=0.32\textwidth]{MathematicalMorphologyGrayscaleErosionOutput}
+  // \includegraphics[width=0.32\textwidth]{MathematicalMorphologyGrayscaleDilationOutput}
+  // \itkcaption[Effect of erosion and dilation in a grayscale image.]{Effect
+  // of erosion and dilation in a grayscale image.}
   // \label{fig:MathematicalMorphologyGrayscaleFilters}
   // \end{figure}
   //
@@ -247,9 +242,8 @@ int main( int argc, char * argv[] )
   //  brain slice. The figure shows how these operations can be used to remove
   //  spurious details from segmented images.
   //
-  //  Software Guide : EndLatex 
+  //  Software Guide : EndLatex
 
 
   return EXIT_SUCCESS;
 }
-

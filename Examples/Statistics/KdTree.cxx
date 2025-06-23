@@ -1,22 +1,20 @@
 /*=========================================================================
-
-  Program:   Insight Segmentation & Registration Toolkit
-  Module:    KdTree.cxx
-  Language:  C++
-  Date:      $Date$
-  Version:   $Revision$
-
-  Copyright (c) Insight Software Consortium. All rights reserved.
-  See ITKCopyright.txt or http://www.itk.org/HTML/Copyright.htm for details.
-
-     This software is distributed WITHOUT ANY WARRANTY; without even 
-     the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR 
-     PURPOSE.  See the above copyright notices for more information.
-
-=========================================================================*/
-#if defined(_MSC_VER)
-#pragma warning ( disable : 4786 )
-#endif
+ *
+ *  Copyright NumFOCUS
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *         https://www.apache.org/licenses/LICENSE-2.0.txt
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *
+ *=========================================================================*/
 
 // Software Guide : BeginLatex
 //
@@ -32,41 +30,41 @@
 
 // Software Guide : BeginCodeSnippet
 #include "itkVector.h"
+#include "itkMath.h"
 #include "itkListSample.h"
-#include "itkKdTree.h"
-#include "itkKdTreeGenerator.h"
 #include "itkWeightedCentroidKdTreeGenerator.h"
-#include "itkEuclideanDistance.h"
+#include "itkEuclideanDistanceMetric.h"
 // Software Guide : EndCodeSnippet
 
-int main()
+int
+main()
 {
   // Software Guide : BeginLatex
-  // 
+  //
   // We define the measurement vector type and instantiate a
   // \subdoxygen{Statistics}{ListSample} object, and then put 1000
-  // measurement vectors in the object. 
-  // 
-  // Software Guide : EndLatex 
+  // measurement vectors in the object.
+  //
+  // Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  typedef itk::Vector< float, 2 > MeasurementVectorType;
+  using MeasurementVectorType = itk::Vector<float, 2>;
 
-  typedef itk::Statistics::ListSample< MeasurementVectorType > SampleType;
-  SampleType::Pointer sample = SampleType::New();
-  sample->SetMeasurementVectorSize( 2 );
+  using SampleType = itk::Statistics::ListSample<MeasurementVectorType>;
+  auto sample = SampleType::New();
+  sample->SetMeasurementVectorSize(2);
 
   MeasurementVectorType mv;
-  for (unsigned int i = 0 ; i < 1000 ; ++i )
-    {
-    mv[0] = (float) i;
-    mv[1] = (float) ((1000 - i) / 2 );
-    sample->PushBack( mv );
-    }
+  for (unsigned int i = 0; i < 1000; ++i)
+  {
+    mv[0] = static_cast<float>(i);
+    mv[1] = static_cast<float>((1000 - i) / 2);
+    sample->PushBack(mv);
+  }
   // Software Guide : EndCodeSnippet
 
   // Software Guide : BeginLatex
-  // 
+  //
   // The following code snippet shows how to create two KdTree objects. The
   // first object \subdoxygen{Statistics}{KdTreeGenerator} has a minimal set
   // of information (partition dimension, partition value, and pointers to
@@ -86,25 +84,24 @@ int main()
   // nodes in a tree. It also affects the efficiency of search. With
   // many small leaf nodes, we might experience slower search
   // performance because of excessive boundary comparisons.
-  // 
-  // Software Guide : EndLatex 
+  //
+  // Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  typedef itk::Statistics::KdTreeGenerator< SampleType > TreeGeneratorType;
-  TreeGeneratorType::Pointer treeGenerator = TreeGeneratorType::New();
+  using TreeGeneratorType = itk::Statistics::KdTreeGenerator<SampleType>;
+  auto treeGenerator = TreeGeneratorType::New();
 
-  treeGenerator->SetSample( sample );
-  treeGenerator->SetBucketSize( 16 );
+  treeGenerator->SetSample(sample);
+  treeGenerator->SetBucketSize(16);
   treeGenerator->Update();
 
-  typedef itk::Statistics::WeightedCentroidKdTreeGenerator< SampleType > 
-    CentroidTreeGeneratorType;
+  using CentroidTreeGeneratorType =
+    itk::Statistics::WeightedCentroidKdTreeGenerator<SampleType>;
 
-  CentroidTreeGeneratorType::Pointer centroidTreeGenerator = 
-                                         CentroidTreeGeneratorType::New();
+  auto centroidTreeGenerator = CentroidTreeGeneratorType::New();
 
-  centroidTreeGenerator->SetSample( sample );
-  centroidTreeGenerator->SetBucketSize( 16 );
+  centroidTreeGenerator->SetSample(sample);
+  centroidTreeGenerator->SetBucketSize(16);
   centroidTreeGenerator->Update();
   // Software Guide : EndCodeSnippet
 
@@ -121,38 +118,37 @@ int main()
   // We can get other information about a node by calling the methods
   // described below in addition to the child node pointers.
   //
-  // Software Guide : EndLatex 
+  // Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  typedef TreeGeneratorType::KdTreeType TreeType;
-  typedef TreeType::NearestNeighbors NeighborsType;
-  typedef TreeType::KdTreeNodeType NodeType;
+  using TreeType = TreeGeneratorType::KdTreeType;
+  using NodeType = TreeType::KdTreeNodeType;
 
-  TreeType::Pointer tree = treeGenerator->GetOutput();
-  TreeType::Pointer centroidTree = centroidTreeGenerator->GetOutput();
+  const TreeType::Pointer tree = treeGenerator->GetOutput();
+  const TreeType::Pointer centroidTree = centroidTreeGenerator->GetOutput();
 
-  NodeType* root = tree->GetRoot();
+  NodeType * root = tree->GetRoot();
 
-  if ( root->IsTerminal() )
-    {
+  if (root->IsTerminal())
+  {
     std::cout << "Root node is a terminal node." << std::endl;
-    }
+  }
   else
-    {
+  {
     std::cout << "Root node is not a terminal node." << std::endl;
-    }
+  }
 
   unsigned int partitionDimension;
-  float partitionValue;
-  root->GetParameters( partitionDimension, partitionValue);
-  std::cout << "Dimension chosen to split the space = " 
-            << partitionDimension << std::endl;
-  std::cout << "Split point on the partition dimension = "
-            << partitionValue << std::endl;
+  float        partitionValue;
+  root->GetParameters(partitionDimension, partitionValue);
+  std::cout << "Dimension chosen to split the space = " << partitionDimension
+            << std::endl;
+  std::cout << "Split point on the partition dimension = " << partitionValue
+            << std::endl;
 
-  std::cout << "Address of the left chile of the root node = "
-            << root->Left() << std::endl;
-  
+  std::cout << "Address of the left chile of the root node = " << root->Left()
+            << std::endl;
+
   std::cout << "Address of the right chile of the root node = "
             << root->Right() << std::endl;
 
@@ -161,7 +157,7 @@ int main()
             << " in the tree hierarchy = " << root->Size() << std::endl;
 
   NodeType::CentroidType centroid;
-  root->GetWeightedCentroid( centroid );
+  root->GetWeightedCentroid(centroid);
   std::cout << "Sum of the measurement vectors under the root node = "
             << centroid << std::endl;
 
@@ -189,22 +185,22 @@ int main()
   //
   // Then we instantiate the type of a distance metric, create an object of
   // this type and set the origin of coordinates for measuring distances.
-  // The \code{GetMeasurementVectorSize()} method returns the length of 
+  // The \code{GetMeasurementVectorSize()} method returns the length of
   // each measurement vector stored in the sample.
   //
   // Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  typedef itk::Statistics::EuclideanDistance< MeasurementVectorType > 
-    DistanceMetricType;
-  DistanceMetricType::Pointer distanceMetric = DistanceMetricType::New();
+  using DistanceMetricType =
+    itk::Statistics::EuclideanDistanceMetric<MeasurementVectorType>;
+  auto distanceMetric = DistanceMetricType::New();
 
-  DistanceMetricType::OriginType origin( 2 );
-  for ( unsigned int i = 0 ; i < sample->GetMeasurementVectorSize() ; ++i )
-    {
+  DistanceMetricType::OriginType origin(2);
+  for (unsigned int i = 0; i < sample->GetMeasurementVectorSize(); ++i)
+  {
     origin[i] = queryPoint[i];
-    }
-  distanceMetric->SetOrigin( origin );
+  }
+  distanceMetric->SetOrigin(origin);
   // Software Guide : EndCodeSnippet
 
 
@@ -216,22 +212,53 @@ int main()
   // Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  unsigned int numberOfNeighbors = 3;
+  constexpr unsigned int                 numberOfNeighbors = 3;
   TreeType::InstanceIdentifierVectorType neighbors;
-  tree->Search( queryPoint, numberOfNeighbors, neighbors ) ; 
-  
-  std::cout << "kd-tree knn search result:" << std::endl 
+  tree->Search(queryPoint, numberOfNeighbors, neighbors);
+
+  std::cout
+    << "\n*** kd-tree knn search result using an Euclidean distance metric:"
+    << std::endl
+    << "query point = [" << queryPoint << "]" << std::endl
+    << "k = " << numberOfNeighbors << std::endl;
+  std::cout << "measurement vector : distance from query point " << std::endl;
+  std::vector<double> distances1(numberOfNeighbors);
+  for (unsigned int i = 0; i < numberOfNeighbors; ++i)
+  {
+    distances1[i] =
+      distanceMetric->Evaluate(tree->GetMeasurementVector(neighbors[i]));
+    std::cout << "[" << tree->GetMeasurementVector(neighbors[i])
+              << "] : " << distances1[i] << std::endl;
+  }
+  // Software Guide : EndCodeSnippet
+
+  // Software Guide : BeginLatex
+  //
+  // Instead of using an Euclidean distance metric, Tree itself can also
+  // return the distance vector. Here we get the distance values from tree and
+  // compare them with previous values.
+  //
+  // Software Guide : EndLatex
+
+  // Software Guide : BeginCodeSnippet
+  std::vector<double> distances2;
+  tree->Search(queryPoint, numberOfNeighbors, neighbors, distances2);
+
+  std::cout << "\n*** kd-tree knn search result directly from tree:"
+            << std::endl
             << "query point = [" << queryPoint << "]" << std::endl
             << "k = " << numberOfNeighbors << std::endl;
-  std::cout << "measurement vector : distance" << std::endl;
-  for ( unsigned int i = 0 ; i < numberOfNeighbors ; ++i )
+  std::cout << "measurement vector : distance from query point " << std::endl;
+  for (unsigned int i = 0; i < numberOfNeighbors; ++i)
+  {
+    std::cout << "[" << tree->GetMeasurementVector(neighbors[i])
+              << "] : " << distances2[i] << std::endl;
+    if (itk::Math::NotAlmostEquals(distances2[i], distances1[i]))
     {
-    std::cout << "[" << tree->GetMeasurementVector( neighbors[i] )
-              << "] : "  
-              << distanceMetric->Evaluate( 
-                  tree->GetMeasurementVector( neighbors[i] )) 
-              << std::endl;
+      std::cerr << "Mismatched distance values by tree." << std::endl;
+      return EXIT_FAILURE;
     }
+  }
   // Software Guide : EndCodeSnippet
 
 
@@ -243,19 +270,32 @@ int main()
   // Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  centroidTree->Search( queryPoint, numberOfNeighbors, neighbors ) ; 
-  std::cout << "weighted centroid kd-tree knn search result:" << std::endl 
+  std::vector<double> distances3;
+  centroidTree->Search(queryPoint, numberOfNeighbors, neighbors, distances3);
+
+  centroidTree->Search(queryPoint, numberOfNeighbors, neighbors);
+  std::cout << "\n*** Weighted centroid kd-tree knn search result:"
+            << std::endl
             << "query point = [" << queryPoint << "]" << std::endl
             << "k = " << numberOfNeighbors << std::endl;
-  std::cout << "measurement vector : distance" << std::endl;
-  for ( unsigned int i = 0 ; i < numberOfNeighbors ; ++i )
+  std::cout
+    << "measurement vector : distance_by_distMetric : distance_by_tree"
+    << std::endl;
+  std::vector<double> distances4(numberOfNeighbors);
+  for (unsigned int i = 0; i < numberOfNeighbors; ++i)
+  {
+    distances4[i] = distanceMetric->Evaluate(
+      centroidTree->GetMeasurementVector(neighbors[i]));
+    std::cout << "[" << centroidTree->GetMeasurementVector(neighbors[i])
+              << "]       :       " << distances4[i] << "            :       "
+              << distances3[i] << std::endl;
+    if (itk::Math::NotAlmostEquals(distances2[i], distances1[i]))
     {
-    std::cout << "[" << centroidTree->GetMeasurementVector( neighbors[i] ) 
-              << "] : "  
-              << distanceMetric->Evaluate( 
-                  centroidTree->GetMeasurementVector( neighbors[i])) 
-              << std::endl;
+      std::cerr << "Mismatched distance values by centroid tree."
+                << std::endl;
+      return EXIT_FAILURE;
     }
+  }
   // Software Guide : EndCodeSnippet
 
 
@@ -268,22 +308,23 @@ int main()
   // Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  double radius = 437.0;
+  constexpr double radius = 437.0;
 
-  tree->Search( queryPoint, radius, neighbors ) ; 
-  
-  std::cout << "kd-tree radius search result:" << std::endl
+  tree->Search(queryPoint, radius, neighbors);
+
+  std::cout << "\nSearching points within a hyper-spherical kernel:"
+            << std::endl;
+  std::cout << "*** kd-tree radius search result:" << std::endl
             << "query point = [" << queryPoint << "]" << std::endl
             << "search radius = " << radius << std::endl;
   std::cout << "measurement vector : distance" << std::endl;
-  for ( unsigned int i = 0 ; i < neighbors.size() ; ++i )
-    {
-    std::cout << "[" << tree->GetMeasurementVector( neighbors[i] )
-              << "] : "  
-              << distanceMetric->Evaluate( 
-                  tree->GetMeasurementVector( neighbors[i])) 
+  for (auto neighbor : neighbors)
+  {
+    std::cout << "[" << tree->GetMeasurementVector(neighbor) << "] : "
+              << distanceMetric->Evaluate(
+                   tree->GetMeasurementVector(neighbor))
               << std::endl;
-    }
+  }
   // Software Guide : EndCodeSnippet
 
 
@@ -295,20 +336,19 @@ int main()
   // Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  centroidTree->Search( queryPoint, radius, neighbors ) ; 
-  std::cout << "weighted centroid kd-tree radius search result:" << std::endl
+  centroidTree->Search(queryPoint, radius, neighbors);
+  std::cout << "\n*** Weighted centroid kd-tree radius search result:"
+            << std::endl
             << "query point = [" << queryPoint << "]" << std::endl
             << "search radius = " << radius << std::endl;
   std::cout << "measurement vector : distance" << std::endl;
-  for ( unsigned int i = 0 ; i < neighbors.size() ; ++i )
-    {
-    std::cout << "[" << centroidTree->GetMeasurementVector( neighbors[i] )
-              << "] : "  
-              << distanceMetric->Evaluate( 
-                  centroidTree->GetMeasurementVector( neighbors[i])) 
+  for (auto neighbor : neighbors)
+  {
+    std::cout << "[" << centroidTree->GetMeasurementVector(neighbor) << "] : "
+              << distanceMetric->Evaluate(
+                   centroidTree->GetMeasurementVector(neighbor))
               << std::endl;
-    }
+  }
   // Software Guide : EndCodeSnippet
-
-  return 0;
+  return EXIT_SUCCESS;
 }
