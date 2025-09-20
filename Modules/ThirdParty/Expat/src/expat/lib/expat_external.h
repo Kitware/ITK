@@ -45,7 +45,6 @@
 // upstream expat uses a .def file for visual studio to define exported
 // symbols.  ITK uses a paradigm that is used throughout ITK codebase
 // to accomplish exporting symbols.
-#    include "expatDllConfig.h"
 #    include "itk_expat_mangle.h"
 // ITK --stop
 
