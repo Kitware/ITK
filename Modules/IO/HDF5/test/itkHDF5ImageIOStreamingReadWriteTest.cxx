@@ -92,9 +92,9 @@ int
 HDF5ReadWriteTest2(const char * fileName)
 {
   { // START an isolation block for the streaming readers and writers.
-    // For streaming to work, both the ReaderImageFilter and the
-    // WriteImageFilter will maintain handles to open HDF5 files
-    // Until their destructors are run.
+    // For streaming to work, the itk::ImageFileReader / itk::ImageFileWriter
+    // pipeline and the itk::StreamingImageFilter will maintain handles to open HDF5 files
+    // until their destructors run.
 
     using ImageType = typename itk::Image<TPixel, 3>;
 
