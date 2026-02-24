@@ -117,16 +117,12 @@ public:
   /** Not implemented. */
   void
   WriteImageInformation() override
-  {
-    return;
-  }
+  {}
 
   /** Not implemented - does nothing */
   void
   Write(const void * itkNotUsed(buffer)) override
-  {
-    return;
-  }
+  {}
 
 protected:
   Bruker2dseqImageIO();

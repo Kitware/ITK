@@ -124,7 +124,6 @@ public:
   SetOffset(const OutputVectorType & offset)
   {
     m_Offset = offset;
-    return;
   }
 
   /** Compose with another TranslationTransform. */

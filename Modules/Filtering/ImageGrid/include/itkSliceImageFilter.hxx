@@ -211,7 +211,6 @@ SliceImageFilter<TInputImage, TOutputImage>::GenerateInputRequestedRegion()
   }
 
   inputPtr->SetRequestedRegion(inputRequestedRegion);
-  return;
 }
 
 

@@ -173,8 +173,6 @@ Mesh<TPixelType, VDimension, TMeshTraits>::CreateCell(int cellType, CellAutoPoin
     default:
       itkExceptionStringMacro("Unknown mesh cell");
   }
-
-  return;
 }
 
 template <typename TPixelType, unsigned int VDimension, typename TMeshTraits>

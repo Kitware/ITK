@@ -116,9 +116,7 @@ public:
    * user of the class. */
   void
   ReadImageInformation() override
-  {
-    return;
-  }
+  {}
 
   /** Reads the data from disk into the memory buffer provided. */
   void
@@ -154,9 +152,7 @@ public:
   /** Binary files have no image information to read.  */
   void
   WriteImageInformation() override
-  {
-    return;
-  }
+  {}
 
   /** Writes the data to disk from the memory buffer provided. */
   void

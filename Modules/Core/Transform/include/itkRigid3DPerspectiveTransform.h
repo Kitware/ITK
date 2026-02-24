@@ -148,7 +148,6 @@ public:
   SetOffset(const OffsetType & offset)
   {
     m_Offset = offset;
-    return;
   }
 
   /** This method sets the rotation of an Rigid3DPerspectiveTransform to a

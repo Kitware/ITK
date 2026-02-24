@@ -236,7 +236,6 @@ public:
     this->ComputeMatrixParameters();
     m_MatrixMTime.Modified();
     this->Modified();
-    return;
   }
 
   /** Get matrix of an MatrixOffsetTransformBase
@@ -266,7 +265,6 @@ public:
     m_Offset = offset;
     this->ComputeTranslation();
     this->Modified();
-    return;
   }
 
   /** Get offset of an MatrixOffsetTransformBase
@@ -308,7 +306,6 @@ public:
     m_Center = center;
     this->ComputeOffset();
     this->Modified();
-    return;
   }
 
   /** Get center of rotation of the MatrixOffsetTransformBase
@@ -335,7 +332,6 @@ public:
     m_Translation = translation;
     this->ComputeOffset();
     this->Modified();
-    return;
   }
 
   /** Get translation component of the MatrixOffsetTransformBase

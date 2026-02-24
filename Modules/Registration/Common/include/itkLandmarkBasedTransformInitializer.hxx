@@ -804,8 +804,6 @@ LandmarkBasedTransformInitializer<TTransform, TFixedImage, TMovingImage>::Create
   N[1][2] = N[2][1] = M[0][1] + M[1][0];
   N[1][3] = N[3][1] = M[2][0] + M[0][2];
   N[2][3] = N[3][2] = M[1][2] + M[2][1];
-
-  return;
 }
 
 template <typename TTransform, typename TFixedImage, typename TMovingImage>

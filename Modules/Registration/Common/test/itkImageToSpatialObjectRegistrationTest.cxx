@@ -158,9 +158,7 @@ public:
   /** Get the Derivatives of the Match Measure */
   void
   GetDerivative(const ParametersType &, DerivativeType &) const override
-  {
-    return;
-  }
+  {}
 
   /** Get the Value for SingleValue Optimizers */
   MeasureType

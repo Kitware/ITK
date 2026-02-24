@@ -190,7 +190,6 @@ protected:
     EncapsulateMetaData<unsigned int>(metaDic, "numberOfLineIndices", numberOfLineIndices);
     EncapsulateMetaData<unsigned int>(metaDic, "numberOfPolygons", numberOfPolygons);
     EncapsulateMetaData<unsigned int>(metaDic, "numberOfPolygonIndices", numberOfPolygonIndices);
-    return;
   }
 
   template <typename T>
@@ -441,8 +440,6 @@ protected:
 
       outputFile << ConvertNumberToString(buffer[ii * this->m_PointDimension + this->m_PointDimension - 1]) << '\n';
     }
-
-    return;
   }
 
   template <typename T>
@@ -454,8 +451,6 @@ protected:
     itk::ByteSwapper<T>::SwapWriteRangeFromSystemToBigEndian(
       buffer, this->m_NumberOfPoints * this->m_PointDimension, &outputFile);
     outputFile << '\n';
-
-    return;
   }
 
   template <typename T>
@@ -800,8 +795,6 @@ protected:
         outputFile << ConvertNumberToString(buffer[ii * this->m_NumberOfPointPixelComponents + jj]) << '\n';
       }
     }
-
-    return;
   }
 
   template <typename T>
@@ -864,7 +857,6 @@ protected:
     itk::ByteSwapper<T>::SwapWriteRangeFromSystemToBigEndian(
       buffer, this->m_NumberOfPointPixels * this->m_NumberOfPointPixelComponents, &outputFile);
     outputFile << '\n';
-    return;
   }
 
   template <typename T>
@@ -990,8 +982,6 @@ protected:
         outputFile << buffer[ii * this->m_NumberOfCellPixelComponents + jj] << '\n';
       }
     }
-
-    return;
   }
 
   template <typename T>
@@ -1054,7 +1044,6 @@ protected:
     itk::ByteSwapper<T>::SwapWriteRangeFromSystemToBigEndian(
       buffer, this->m_NumberOfCells * this->m_NumberOfCellPixelComponents, &outputFile);
     outputFile << '\n';
-    return;
   }
 
   template <typename T>
@@ -1075,8 +1064,6 @@ protected:
 
       outputFile << '\n';
     }
-
-    return;
   }
 
   template <typename T>
@@ -1096,7 +1083,6 @@ protected:
 
     outputFile.write(reinterpret_cast<char *>(data.get()), numberOfElements);
     outputFile << '\n';
-    return;
   }
 
   /** Convert cells buffer for output cells buffer, it's user's responsibility to make sure

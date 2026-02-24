@@ -209,8 +209,6 @@ Object::SubjectImplementation::InvokeEventRecursion(const EventObject &         
 
     ++i;
   }
-
-  return;
 }
 
 Command *
