@@ -21,6 +21,18 @@ else()
     ${ITKExpat_BINARY_DIR}/src/itkexpat
     ${ITKExpat_SOURCE_DIR}/src
   )
+  if(NOT ITK_FUTURE_LEGACY_REMOVE)
+    list(
+      APPEND
+      ITKExpat_INCLUDE_DIRS
+      # The include is needed to promote finding itk version of
+      # "#include <expat.h>" so that the linkage stage can find the
+      # correct symbol names for backward compatibiltiy with
+      # behaviors of ITKv5 and earlier.
+      ${ITKExpat_SOURCE_DIR}/src/itkexpat/lib
+    )
+  endif()
+
   set(ITKExpat_LIBRARIES ITKEXPAT)
   set(
     ITK_LIBRARY_PROPERTIES
