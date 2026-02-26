@@ -5,6 +5,14 @@
   its enabled third-party dependencies at build configuration time. The SBOM
   includes component names, versions, licenses, and dependency relationships.
 
+  Per-module SPDX metadata is declared in each module's itk-module.cmake via
+  the itk_module() macro arguments:
+    SPDX_LICENSE             - SPDX license identifier (e.g. "Apache-2.0")
+    SPDX_DOWNLOAD_LOCATION   - URL for the upstream source
+    SPDX_COPYRIGHT           - Copyright text
+    SPDX_CUSTOM_LICENSE_FILE  - Extracted text for custom LicenseRef-* IDs
+    SPDX_CUSTOM_LICENSE_NAME  - Human-readable name for custom license refs
+
   Usage:
     option(ITK_GENERATE_SBOM "Generate SPDX SBOM at configure time" ON)
     include(ITKSBOMGeneration)
@@ -100,199 +108,6 @@ function(_itk_sbom_json_escape input_string output_var)
 endfunction()
 
 #-----------------------------------------------------------------------------
-# Internal: Define SBOM metadata for a known ThirdParty module.
-# Sets variables in the caller's scope:
-#   _spdx_license, _download_location, _supplier, _copyright, _version
-#
-function(_itk_sbom_get_thirdparty_metadata module_name
-  out_license out_download out_supplier out_copyright out_version)
-
-  # Defaults
-  set(_license "NOASSERTION")
-  set(_download "NOASSERTION")
-  set(_supplier "NOASSERTION")
-  set(_copyright "NOASSERTION")
-  set(_version "NOASSERTION")
-
-  if("${module_name}" STREQUAL "ITKDCMTK")
-    set(_license "BSD-3-Clause")
-    set(_download "https://dicom.offis.de/dcmtk")
-    set(_supplier "Organization: OFFIS e.V.")
-    set(_copyright "Copyright OFFIS e.V.")
-    set(_version "3.6.9")
-
-  elseif("${module_name}" STREQUAL "ITKDICOMParser")
-    set(_license "BSD-3-Clause")
-    set(_download "https://github.com/InsightSoftwareConsortium/ITK")
-    set(_supplier "Organization: Kitware Inc.")
-    set(_copyright "Copyright Kitware Inc.")
-
-  elseif("${module_name}" STREQUAL "ITKDoubleConversion")
-    set(_license "BSD-3-Clause")
-    set(_download "https://github.com/google/double-conversion")
-    set(_supplier "Organization: Google Inc.")
-    set(_copyright "Copyright Google Inc.")
-    set(_version "3.1.6")
-
-  elseif("${module_name}" STREQUAL "ITKEigen3")
-    set(_license "MPL-2.0")
-    set(_download "https://eigen.tuxfamily.org")
-    set(_supplier "Organization: Eigen")
-    set(_copyright "Copyright Eigen contributors")
-    # Try to detect Eigen version from CMake variable
-    if(DEFINED EIGEN3_VERSION_STRING)
-      set(_version "${EIGEN3_VERSION_STRING}")
-    elseif(DEFINED Eigen3_VERSION)
-      set(_version "${Eigen3_VERSION}")
-    endif()
-
-  elseif("${module_name}" STREQUAL "ITKExpat")
-    set(_license "MIT")
-    set(_download "https://libexpat.github.io")
-    set(_supplier "Organization: Expat development team")
-    set(_copyright "Copyright Expat development team")
-
-  elseif("${module_name}" STREQUAL "ITKGDCM")
-    set(_license "BSD-3-Clause")
-    set(_download "https://gdcm.sourceforge.net")
-    set(_supplier "Organization: GDCM contributors")
-    set(_copyright "Copyright GDCM contributors")
-    set(_version "3.2.2")
-
-  elseif("${module_name}" STREQUAL "ITKGIFTI")
-    set(_license "LicenseRef-NITRC-Public-Domain")
-    set(_download "https://www.nitrc.org/projects/gifti")
-    set(_supplier "Organization: NITRC")
-    set(_copyright "NOASSERTION")
-
-  elseif("${module_name}" STREQUAL "ITKGoogleTest")
-    set(_license "BSD-3-Clause")
-    set(_download "https://github.com/google/googletest")
-    set(_supplier "Organization: Google Inc.")
-    set(_copyright "Copyright Google Inc.")
-    set(_version "1.17.0")
-
-  elseif("${module_name}" STREQUAL "ITKHDF5")
-    set(_license "BSD-3-Clause")
-    set(_download "https://www.hdfgroup.org/solutions/hdf5")
-    set(_supplier "Organization: The HDF Group")
-    set(_copyright "Copyright The HDF Group")
-    # Try to detect HDF5 version from CMake variable
-    if(DEFINED HDF5_VERSION)
-      set(_version "${HDF5_VERSION}")
-    endif()
-
-  elseif("${module_name}" STREQUAL "ITKJPEG")
-    set(_license "IJG AND BSD-3-Clause AND Zlib")
-    set(_download "https://libjpeg-turbo.org")
-    set(_supplier "Organization: libjpeg-turbo")
-    set(_copyright "Copyright libjpeg-turbo contributors")
-
-  elseif("${module_name}" STREQUAL "ITKKWSys")
-    set(_license "BSD-3-Clause")
-    set(_download "https://gitlab.kitware.com/utils/kwsys")
-    set(_supplier "Organization: Kitware Inc.")
-    set(_copyright "Copyright Kitware Inc.")
-
-  elseif("${module_name}" STREQUAL "ITKMINC")
-    set(_license "LGPL-2.1-only")
-    set(_download "https://github.com/BIC-MNI/libminc")
-    set(_supplier "Organization: McConnell Brain Imaging Centre")
-    set(_copyright "Copyright McConnell Brain Imaging Centre")
-
-  elseif("${module_name}" STREQUAL "ITKMetaIO")
-    set(_license "Apache-2.0")
-    set(_download "https://github.com/Kitware/MetaIO")
-    set(_supplier "Organization: Kitware Inc.")
-    set(_copyright "Copyright Kitware Inc.")
-
-  elseif("${module_name}" STREQUAL "ITKNIFTI")
-    set(_license "LicenseRef-NIFTI-Public-Domain")
-    set(_download "https://nifti.nimh.nih.gov")
-    set(_supplier "Organization: NITRC")
-    set(_copyright "NOASSERTION")
-
-  elseif("${module_name}" STREQUAL "ITKNetlib")
-    set(_license "LicenseRef-Netlib-SLATEC")
-    set(_download "https://www.netlib.org/slatec")
-    set(_supplier "Organization: Netlib")
-    set(_copyright "NOASSERTION")
-
-  elseif("${module_name}" STREQUAL "ITKNrrdIO")
-    set(_license "LGPL-2.1-only")
-    set(_download "https://teem.sourceforge.net/nrrd")
-    set(_supplier "Organization: Teem")
-    set(_copyright "Copyright Teem contributors")
-
-  elseif("${module_name}" STREQUAL "ITKOpenJPEG")
-    set(_license "BSD-2-Clause")
-    set(_download "https://www.openjpeg.org")
-    set(_supplier "Organization: OpenJPEG contributors")
-    set(_copyright "Copyright OpenJPEG contributors")
-    set(_version "2.5.4")
-
-  elseif("${module_name}" STREQUAL "ITKPNG")
-    set(_license "Libpng-2.0")
-    set(_download "https://www.libpng.org/pub/png/libpng.html")
-    set(_supplier "Organization: libpng contributors")
-    set(_copyright "Copyright libpng contributors")
-    # Try to detect PNG version from CMake variable
-    if(DEFINED PNG_VERSION_STRING)
-      set(_version "${PNG_VERSION_STRING}")
-    endif()
-
-  elseif("${module_name}" STREQUAL "ITKTBB")
-    set(_license "Apache-2.0")
-    set(_download "https://github.com/oneapi-src/oneTBB")
-    set(_supplier "Organization: Intel Corporation")
-    set(_copyright "Copyright Intel Corporation")
-    # Try to detect TBB version from CMake variable
-    if(DEFINED TBB_VERSION)
-      set(_version "${TBB_VERSION}")
-    endif()
-
-  elseif("${module_name}" STREQUAL "ITKTIFF")
-    set(_license "libtiff")
-    set(_download "https://libtiff.maptools.org")
-    set(_supplier "Organization: libtiff contributors")
-    set(_copyright "Copyright libtiff contributors")
-    # Try to detect TIFF version from CMake variable
-    if(DEFINED TIFF_VERSION_STRING)
-      set(_version "${TIFF_VERSION_STRING}")
-    endif()
-
-  elseif("${module_name}" STREQUAL "ITKVNL")
-    set(_license "BSD-3-Clause")
-    set(_download "https://vxl.github.io")
-    set(_supplier "Organization: VXL contributors")
-    set(_copyright "Copyright VXL contributors")
-
-  elseif("${module_name}" STREQUAL "ITKZLIB")
-    set(_license "Zlib")
-    set(_download "https://github.com/zlib-ng/zlib-ng")
-    set(_supplier "Organization: zlib-ng contributors")
-    set(_copyright "Copyright zlib-ng contributors")
-    # Try to detect zlib version from CMake variable
-    if(DEFINED ZLIB_VERSION_STRING)
-      set(_version "${ZLIB_VERSION_STRING}")
-    endif()
-
-  elseif("${module_name}" STREQUAL "ITKLIBLBFGS")
-    set(_license "MIT")
-    set(_download "https://github.com/chokkan/liblbfgs")
-    set(_supplier "Organization: Naoaki Okazaki")
-    set(_copyright "Copyright Naoaki Okazaki")
-
-  endif()
-
-  set(${out_license} "${_license}" PARENT_SCOPE)
-  set(${out_download} "${_download}" PARENT_SCOPE)
-  set(${out_supplier} "${_supplier}" PARENT_SCOPE)
-  set(${out_copyright} "${_copyright}" PARENT_SCOPE)
-  set(${out_version} "${_version}" PARENT_SCOPE)
-endfunction()
-
-#-----------------------------------------------------------------------------
 # Main function: Generate the SPDX 2.3 SBOM JSON document.
 #
 function(itk_generate_sbom)
@@ -339,28 +154,43 @@ function(itk_generate_sbom)
 
   # Collect ThirdParty modules from enabled modules list
   set(_thirdparty_spdx_ids "")
+  # Track custom license refs for hasExtractedLicensingInfo
+  set(_custom_license_ids "")
+  set(_custom_license_names "")
+  set(_custom_license_texts "")
   foreach(_mod ${ITK_MODULES_ENABLED})
     if(${_mod}_IS_TEST)
       continue()
     endif()
 
-    # Check if this is a ThirdParty module by examining its source directory
-    if(NOT DEFINED ${_mod}_SOURCE_DIR)
-      continue()
-    endif()
-    string(FIND "${${_mod}_SOURCE_DIR}" "Modules/ThirdParty" _tp_pos)
-    if(_tp_pos EQUAL -1)
+    # Only include modules that have SPDX metadata declared
+    set(_pkg_license "${ITK_MODULE_${_mod}_SPDX_LICENSE}")
+    if(NOT _pkg_license)
       continue()
     endif()
 
-    # Get metadata for this ThirdParty module
-    _itk_sbom_get_thirdparty_metadata("${_mod}"
-      _pkg_license _pkg_download _pkg_supplier _pkg_copyright _pkg_version)
+    set(_pkg_download "${ITK_MODULE_${_mod}_SPDX_DOWNLOAD_LOCATION}")
+    set(_pkg_copyright "${ITK_MODULE_${_mod}_SPDX_COPYRIGHT}")
+    if(NOT _pkg_download)
+      set(_pkg_download "NOASSERTION")
+    endif()
+    if(NOT _pkg_copyright)
+      set(_pkg_copyright "NOASSERTION")
+    endif()
 
     # Get description from module declaration and escape for JSON
     set(_pkg_description "${ITK_MODULE_${_mod}_DESCRIPTION}")
     if(_pkg_description)
       _itk_sbom_json_escape("${_pkg_description}" _pkg_description)
+    endif()
+
+    # Collect custom license references
+    set(_custom_file "${ITK_MODULE_${_mod}_SPDX_CUSTOM_LICENSE_FILE}")
+    set(_custom_name "${ITK_MODULE_${_mod}_SPDX_CUSTOM_LICENSE_NAME}")
+    if(_custom_file AND _custom_name)
+      list(APPEND _custom_license_ids "${_pkg_license}")
+      list(APPEND _custom_license_names "${_custom_name}")
+      list(APPEND _custom_license_texts "${_custom_file}")
     endif()
 
     # Sanitize module name for SPDX ID
@@ -371,9 +201,9 @@ function(itk_generate_sbom)
     string(APPEND _json "    {\n")
     string(APPEND _json "      \"SPDXID\": \"SPDXRef-${_spdx_id}\",\n")
     string(APPEND _json "      \"name\": \"${_mod}\",\n")
-    string(APPEND _json "      \"versionInfo\": \"${_pkg_version}\",\n")
+    string(APPEND _json "      \"versionInfo\": \"NOASSERTION\",\n")
     string(APPEND _json "      \"downloadLocation\": \"${_pkg_download}\",\n")
-    string(APPEND _json "      \"supplier\": \"${_pkg_supplier}\",\n")
+    string(APPEND _json "      \"supplier\": \"NOASSERTION\",\n")
     string(APPEND _json "      \"licenseConcluded\": \"${_pkg_license}\",\n")
     string(APPEND _json "      \"licenseDeclared\": \"${_pkg_license}\",\n")
     string(APPEND _json "      \"copyrightText\": \"${_pkg_copyright}\",\n")
@@ -449,29 +279,34 @@ function(itk_generate_sbom)
     string(APPEND _json "    }")
   endforeach()
 
-  string(APPEND _json "\n  ],\n")
+  string(APPEND _json "\n  ]")
 
   # --- hasExtractedLicensingInfo for custom LicenseRef identifiers ---
-  string(APPEND _json "  \"hasExtractedLicensingInfo\": [\n")
-  string(APPEND _json "    {\n")
-  string(APPEND _json "      \"licenseId\": \"LicenseRef-NIFTI-Public-Domain\",\n")
-  string(APPEND _json "      \"name\": \"NIFTI Public Domain License\",\n")
-  string(APPEND _json "      \"extractedText\": \"This software is in the public domain. The NIFTI header and library are released into the public domain.\"\n")
-  string(APPEND _json "    },\n")
-  string(APPEND _json "    {\n")
-  string(APPEND _json "      \"licenseId\": \"LicenseRef-NITRC-Public-Domain\",\n")
-  string(APPEND _json "      \"name\": \"NITRC GIFTI Public Domain License\",\n")
-  string(APPEND _json "      \"extractedText\": \"The GIFTI library is released into the public domain under the NITRC project.\"\n")
-  string(APPEND _json "    },\n")
-  string(APPEND _json "    {\n")
-  string(APPEND _json "      \"licenseId\": \"LicenseRef-Netlib-SLATEC\",\n")
-  string(APPEND _json "      \"name\": \"Netlib SLATEC Public Domain License\",\n")
-  string(APPEND _json "      \"extractedText\": \"The SLATEC Common Mathematical Library is issued by the U.S. Government and is in the public domain.\"\n")
-  string(APPEND _json "    }\n")
-  string(APPEND _json "  ]\n")
+  list(LENGTH _custom_license_ids _num_custom)
+  if(_num_custom GREATER 0)
+    string(APPEND _json ",\n")
+    string(APPEND _json "  \"hasExtractedLicensingInfo\": [\n")
+    set(_first_custom TRUE)
+    math(EXPR _last_idx "${_num_custom} - 1")
+    foreach(_idx RANGE ${_last_idx})
+      list(GET _custom_license_ids ${_idx} _lic_id)
+      list(GET _custom_license_names ${_idx} _lic_name)
+      list(GET _custom_license_texts ${_idx} _lic_text)
+      if(NOT _first_custom)
+        string(APPEND _json ",\n")
+      endif()
+      set(_first_custom FALSE)
+      string(APPEND _json "    {\n")
+      string(APPEND _json "      \"licenseId\": \"${_lic_id}\",\n")
+      string(APPEND _json "      \"name\": \"${_lic_name}\",\n")
+      string(APPEND _json "      \"extractedText\": \"${_lic_text}\"\n")
+      string(APPEND _json "    }")
+    endforeach()
+    string(APPEND _json "\n  ]")
+  endif()
 
   # --- Close JSON document ---
-  string(APPEND _json "}\n")
+  string(APPEND _json "\n}\n")
 
   # Write SBOM to build directory
   set(_sbom_file "${CMAKE_BINARY_DIR}/sbom.spdx.json")
