@@ -72,14 +72,14 @@ macro(itk_module _name)
   set(ITK_MODULE_${itk-module}_SPDX_LICENSE "")
   set(ITK_MODULE_${itk-module}_SPDX_DOWNLOAD_LOCATION "")
   set(ITK_MODULE_${itk-module}_SPDX_COPYRIGHT "")
-  set(ITK_MODULE_${itk-module}_SPDX_CUSTOM_LICENSE_FILE "")
+  set(ITK_MODULE_${itk-module}_SPDX_CUSTOM_LICENSE_TEXT "")
   set(ITK_MODULE_${itk-module}_SPDX_CUSTOM_LICENSE_NAME "")
   foreach(arg ${ARGN})
     ### Parse itk_module named options
     if(
       "${arg}"
         MATCHES
-        "^((|COMPILE_|PRIVATE_|TEST_|)DEPENDS|DESCRIPTION|DEFAULT|FACTORY_NAMES|SPDX_LICENSE|SPDX_DOWNLOAD_LOCATION|SPDX_COPYRIGHT|SPDX_CUSTOM_LICENSE_FILE|SPDX_CUSTOM_LICENSE_NAME)$"
+        "^((|COMPILE_|PRIVATE_|TEST_|)DEPENDS|DESCRIPTION|DEFAULT|FACTORY_NAMES|SPDX_LICENSE|SPDX_DOWNLOAD_LOCATION|SPDX_COPYRIGHT|SPDX_CUSTOM_LICENSE_TEXT|SPDX_CUSTOM_LICENSE_NAME)$"
     )
       set(_doing "${arg}")
     elseif("${arg}" MATCHES "^EXCLUDE_FROM_DEFAULT$")
@@ -118,9 +118,9 @@ macro(itk_module _name)
     elseif("${_doing}" MATCHES "^SPDX_COPYRIGHT$")
       set(_doing "")
       set(ITK_MODULE_${itk-module}_SPDX_COPYRIGHT "${arg}")
-    elseif("${_doing}" MATCHES "^SPDX_CUSTOM_LICENSE_FILE$")
+    elseif("${_doing}" MATCHES "^SPDX_CUSTOM_LICENSE_TEXT$")
       set(_doing "")
-      set(ITK_MODULE_${itk-module}_SPDX_CUSTOM_LICENSE_FILE "${arg}")
+      set(ITK_MODULE_${itk-module}_SPDX_CUSTOM_LICENSE_TEXT "${arg}")
     elseif("${_doing}" MATCHES "^SPDX_CUSTOM_LICENSE_NAME$")
       set(_doing "")
       set(ITK_MODULE_${itk-module}_SPDX_CUSTOM_LICENSE_NAME "${arg}")

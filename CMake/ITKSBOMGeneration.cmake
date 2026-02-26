@@ -10,7 +10,7 @@
     SPDX_LICENSE             - SPDX license identifier (e.g. "Apache-2.0")
     SPDX_DOWNLOAD_LOCATION   - URL for the upstream source
     SPDX_COPYRIGHT           - Copyright text
-    SPDX_CUSTOM_LICENSE_FILE  - Extracted text for custom LicenseRef-* IDs
+    SPDX_CUSTOM_LICENSE_TEXT  - Extracted text for custom LicenseRef-* IDs
     SPDX_CUSTOM_LICENSE_NAME  - Human-readable name for custom license refs
 
   Usage:
@@ -185,12 +185,12 @@ function(itk_generate_sbom)
     endif()
 
     # Collect custom license references
-    set(_custom_file "${ITK_MODULE_${_mod}_SPDX_CUSTOM_LICENSE_FILE}")
+    set(_custom_text "${ITK_MODULE_${_mod}_SPDX_CUSTOM_LICENSE_TEXT}")
     set(_custom_name "${ITK_MODULE_${_mod}_SPDX_CUSTOM_LICENSE_NAME}")
-    if(_custom_file AND _custom_name)
+    if(_custom_text AND _custom_name)
       list(APPEND _custom_license_ids "${_pkg_license}")
       list(APPEND _custom_license_names "${_custom_name}")
-      list(APPEND _custom_license_texts "${_custom_file}")
+      list(APPEND _custom_license_texts "${_custom_text}")
     endif()
 
     # Sanitize module name for SPDX ID

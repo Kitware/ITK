@@ -13,5 +13,5 @@ itk_module(
   SPDX_DOWNLOAD_LOCATION "https://www.netlib.org/slatec"
   SPDX_COPYRIGHT "NOASSERTION"
   SPDX_CUSTOM_LICENSE_NAME "Netlib SLATEC Public Domain License"
-  SPDX_CUSTOM_LICENSE_FILE "The SLATEC Common Mathematical Library is issued by the U.S. Government and is in the public domain."
+  SPDX_CUSTOM_LICENSE_TEXT "The SLATEC Common Mathematical Library is issued by the U.S. Government and is in the public domain."
 )

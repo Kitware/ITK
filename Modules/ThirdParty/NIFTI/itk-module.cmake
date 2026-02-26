@@ -14,5 +14,5 @@ itk_module(
   SPDX_DOWNLOAD_LOCATION "https://nifti.nimh.nih.gov"
   SPDX_COPYRIGHT "NOASSERTION"
   SPDX_CUSTOM_LICENSE_NAME "NIFTI Public Domain License"
-  SPDX_CUSTOM_LICENSE_FILE "This software is in the public domain. The NIFTI header and library are released into the public domain."
+  SPDX_CUSTOM_LICENSE_TEXT "This software is in the public domain. The NIFTI header and library are released into the public domain."
 )
