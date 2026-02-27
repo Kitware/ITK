@@ -263,8 +263,6 @@ LabelGeometryImageFilter<TLabelImage, TIntensityImage>::GenerateData()
 
     ImageRegionConstIteratorWithIndex<TIntensityImage> it(intensityImage, intensityImage->GetBufferedRegion());
 
-    typename IntensityImageIteratorType::IndexType index;
-
     labelIt.GoToBegin();
 
     while (!it.IsAtEnd())
@@ -273,7 +271,7 @@ LabelGeometryImageFilter<TLabelImage, TIntensityImage>::GenerateData()
       auto mapIt = m_LabelGeometryMapper.find(label);
 
       value = static_cast<RealType>(it.Get());
-      index = it.GetIndex();
+      const auto & index = it.GetIndex();
 
       // INTEGRATED PIXEL VALUE
       mapIt->second.m_Sum += value;
