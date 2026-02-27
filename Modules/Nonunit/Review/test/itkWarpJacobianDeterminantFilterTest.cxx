@@ -17,6 +17,7 @@
  *=========================================================================*/
 
 #include "itkDisplacementFieldJacobianDeterminantFilter.h"
+#include "itkImageRegionIteratorWithIndex.h"
 
 
 int
