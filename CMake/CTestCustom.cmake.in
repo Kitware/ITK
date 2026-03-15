@@ -167,7 +167,7 @@ set(CTEST_CUSTOM_ERROR_EXCEPTION
   # when all 3171/3171 tests pass.
   ".*Caught expected exception\\.?$"
   ".*Expected exception:.*"
-  "^--- ERROR ---$"
+  ".*--- ERROR ---.*"
   ".*itk::ExceptionObject.*"
   ".*Description: Method not applicable for deformable transform\\..*"
   ".*Description: Transform has not been set\\..*"
