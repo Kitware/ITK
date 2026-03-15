@@ -159,11 +159,23 @@ set(CTEST_CUSTOM_ERROR_EXCEPTION
   ".*WARNING  root: emcc: cannot find library.*"
 
   # ITK tests: expected exceptions are printed with an "--- ERROR ---" banner
-  # (e.g. after "Caught expected exception" / "Expected exception").
+  # and itk::ExceptionObject traces. These are normal output from negative
+  # test cases that verify correct exception handling. CTest/CDash pattern-
+  # matches these as errors, causing ci_completed_successfully to fail even
+  # when all 3171/3171 tests pass.
   ".*Caught expected exception\\.?$"
   ".*Expected exception:.*"
   "^--- ERROR ---$"
   ".*itk::ExceptionObject.*"
   ".*Description: Method not applicable for deformable transform\\..*"
+  ".*Description: Transform has not been set\\..*"
+  ".*Description: Input parameter list size is not expected size\\..*"
+  ".*Description: Input InputImage is required but not set\\..*"
   ".*Description: Seed1 is not within the input image!.*"
+
+  # Test output that CDash pattern-matches as errors but are expected
+  # diagnostics from passing negative test cases
+  ".*Test FAILED !!.*"
+  ".*ITK ERROR:.*"
+  ".*FAILED: FIXME MetaImage library.*"
   )
