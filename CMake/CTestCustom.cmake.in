@@ -127,15 +127,16 @@ set(CTEST_CUSTOM_WARNING_EXCEPTION
   # ignore third party GoogleTest warnings
   ".*Modules/ThirdParty/GoogleTest.*:warning:.*"
 
-  ".*libpng warning: sCAL: invalid unit.*"
 
   # ignore -Wunused-template warnings in third party DoubleConversion.
   ".*Modules/ThirdParty/DoubleConversion/.*warning:.*Wunused-template"
 
   # ignore some third party warnings
-  ".*Modules/ThirdParty/.*warning:.*Wzero-as-null-pointer-constant"
-  ".*Modules/ThirdParty/Eigen3/.*warning:.*Wallocator-wrappers"
-  ".*Modules/ThirdParty/Eigen3/.*warning:.*Wmaybe-uninitialized"
+  ".*Modules/ThirdParty/.*warning:.*Wzero-as-null-pointer-constant.*"
+  ".*Modules/ThirdParty/Eigen3/.*warning:.*Wallocator-wrappers.*"
+  ".*Modules/ThirdParty/Eigen3/.*warning:.*Wmaybe-uninitialized.*"
+  ".*libpng warning: sCAL: invalid unit.*"
+  ".*Expect a warning:.*"
 
   # CircleCI distcc warnings
   ".*WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED.*"
