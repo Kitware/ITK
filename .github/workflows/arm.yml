@@ -106,7 +106,7 @@ jobs:
           python3 -m pip install --upgrade --pre numpy
 
       - name: Get specific version of CMake, latest Ninja
-        uses: lukka/get-cmake@v4.0.1
+        uses: lukka/get-cmake@v4.2.3
         with:
           cmakeVersion: ~${{ env.CMakeVersion }}
           ninjaVersion: latest
