@@ -646,6 +646,8 @@ ${DO_NOT_WAIT_FOR_THREADS_CALLS}
   # Add testing
   set(wrapping_test_directory ${CMAKE_CURRENT_SOURCE_DIR}/test)
   if(BUILD_TESTING AND EXISTS ${wrapping_test_directory}/CMakeLists.txt)
+    # itk_add_test labels with ${itk-module}, which is unset in this scope.
+    set(itk-module ${WRAPPER_LIBRARY_NAME})
     add_subdirectory(${wrapping_test_directory})
   endif()
   unset(wrapping_test_directory)
