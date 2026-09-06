@@ -111,6 +111,14 @@ else()
     "SABIModule"
     _SKBUILD_SABI_COMPONENT_REQUIRED
   )
+  # A reconfigure sees the cached value, so remember how it was first set.
+  if(NOT DEFINED ITK_USE_PYTHON_LIMITED_API_WAS_AUTO)
+    if(NOT DEFINED ITK_USE_PYTHON_LIMITED_API)
+      set(ITK_USE_PYTHON_LIMITED_API_WAS_AUTO 1 CACHE INTERNAL "")
+    else()
+      set(ITK_USE_PYTHON_LIMITED_API_WAS_AUTO 0 CACHE INTERNAL "")
+    endif()
+  endif()
   if(NOT DEFINED ITK_USE_PYTHON_LIMITED_API)
     if(
       (
@@ -139,7 +147,28 @@ else()
     endif()
     mark_as_advanced(ITK_USE_PYTHON_LIMITED_API)
   endif()
+  if(ITK_USE_PYTHON_LIMITED_API_WAS_AUTO)
+    set(
+      _itk_limited_api_origin
+      "auto-selected from Python ${ITK_WRAP_PYTHON_VERSION}"
+    )
+  else()
+    set(_itk_limited_api_origin "requested")
+  endif()
   unset(_SKBUILD_SABI_COMPONENT_REQUIRED)
+  # The value auto-enables by interpreter version, so report what was chosen.
+  if(ITK_USE_PYTHON_LIMITED_API)
+    message(
+      STATUS
+      "Python wrapping: limited API (abi3) ON [${_itk_limited_api_origin}]"
+    )
+  else()
+    message(
+      STATUS
+      "Python wrapping: limited API (abi3) OFF [${_itk_limited_api_origin}]"
+    )
+  endif()
+  unset(_itk_limited_api_origin)
   if(ITK_USE_PYTHON_LIMITED_API)
     if(CMAKE_VERSION VERSION_LESS "3.26")
       message(
