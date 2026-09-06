@@ -110,3 +110,19 @@ if(NOT VTK_RENDERING_BACKEND STREQUAL "None")
         REQUIRES_DISPLAY
   )
 endif()
+
+# Windows has no RPATH, so VTK's DLLs must be on PATH at test time.
+if(WIN32 AND TARGET VTK::CommonCore)
+  get_property(_vtkglue_tests DIRECTORY PROPERTY TESTS)
+  if(_vtkglue_tests)
+    set_property(
+      TEST
+        ${_vtkglue_tests}
+      APPEND
+      PROPERTY
+        ENVIRONMENT_MODIFICATION
+          "PATH=path_list_prepend:$<TARGET_FILE_DIR:VTK::CommonCore>"
+    )
+  endif()
+  unset(_vtkglue_tests)
+endif()
